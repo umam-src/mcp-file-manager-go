@@ -225,7 +225,17 @@ func (m *manager) startSearch(in searchInput) result {
 		if isDir {
 			return true
 		}
-		fi, err := os.Stat(child)
+		// Tautan harus lewat safe(): tanpa itu isi file di luar BASE_DIR bisa
+		// terbaca lewat symlink. Tautan keluar BASE_DIR atau rusak dilewati.
+		target := child
+		if de.Type()&(fs.ModeSymlink|fs.ModeIrregular) != 0 {
+			real, err := m.cfg.safe(child)
+			if err != nil {
+				return true
+			}
+			target = real
+		}
+		fi, err := os.Stat(target)
 		if err != nil || !fi.Mode().IsRegular() {
 			return true
 		}
@@ -235,7 +245,7 @@ func (m *manager) startSearch(in searchInput) result {
 		if fi.Size() > maxSearchFileBytes {
 			return true
 		}
-		data, err := os.ReadFile(child)
+		data, err := os.ReadFile(target)
 		if err != nil || bytes.IndexByte(data[:min(len(data), 8192)], 0) >= 0 {
 			return true
 		}

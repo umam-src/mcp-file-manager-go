@@ -6,7 +6,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -213,6 +215,33 @@ func (m *manager) deleteDir(in deleteDirInput) result {
 	return result{"path": in.Path, "deleted": true, "recursive": in.Recursive}
 }
 
+// backupPrefix adalah awalan nama cadangan sementara tujuan yang akan ditimpa
+// oleh move_file; cadangan dihapus (atau dikembalikan) sebelum tool selesai.
+const backupPrefix = ".mfm-lama-"
+
+// caseOnlyTarget mengenali rename yang hanya mengubah huruf besar/kecil nama
+// pada file yang sama di folder yang sama. Hasilnya path tujuan dengan huruf
+// seperti yang diketik pemanggil. Di sistem yang membedakan huruf (Linux),
+// A.txt bukan file yang sama dengan a.txt sehingga fungsi ini tidak aktif dan
+// rename berjalan seperti biasa.
+func caseOnlyTarget(src, dst, typedDst string) (string, bool) {
+	leaf := filepath.Base(strings.TrimRight(typedDst, `/\`))
+	srcLeaf := filepath.Base(src)
+	if leaf == "." || leaf == "" || leaf == srcLeaf || !strings.EqualFold(leaf, srcLeaf) {
+		return "", false
+	}
+	if foldName(filepath.Dir(src)) != foldName(filepath.Dir(dst)) {
+		return "", false
+	}
+	cand := filepath.Join(filepath.Dir(src), leaf)
+	si, err1 := os.Lstat(src)
+	ci, err2 := os.Lstat(cand)
+	if err1 != nil || err2 != nil || !os.SameFile(si, ci) {
+		return "", false
+	}
+	return cand, true
+}
+
 type moveInput struct {
 	Source      string `json:"source"`
 	Destination string `json:"destination"`
@@ -238,6 +267,15 @@ func (m *manager) moveFile(in moveInput) result {
 	if !srcExists {
 		return fail("Sumber tidak ditemukan: " + in.Source)
 	}
+	// Ganti huruf besar/kecil nama pada file yang sama (Windows: a.txt ke
+	// A.txt). safe() menormalkan huruf ke nama yang ada di disk, sehingga
+	// sumber dan tujuan tampak sama; rename dilakukan ke nama yang diketik.
+	if cand, ok := caseOnlyTarget(src, dst, in.Destination); ok {
+		if err := os.Rename(src, cand); err != nil {
+			return failErr(err)
+		}
+		return result{"destination": in.Destination, "moved": true}
+	}
 	// Penjaga yang tidak ada di versi Python: tanpa ini, overwrite=true bisa
 	// menghapus sumber sendiri bila tujuan sama dengan atau induk dari sumber.
 	switch {
@@ -256,24 +294,44 @@ func (m *manager) moveFile(in moveInput) result {
 	if dstLink {
 		dstExists = true
 	}
+	// Tujuan yang akan ditimpa dipindah dulu ke cadangan sementara dan baru
+	// dihapus setelah rename berhasil; bila rename gagal, cadangan dikembalikan
+	// sehingga tujuan tidak hilang.
+	backup := ""
 	if dstExists {
 		if !in.Overwrite {
 			return fail(fmt.Sprintf("Tujuan sudah ada: %s (gunakan overwrite=True untuk menimpa)", in.Destination))
 		}
-		if dstIsDir && !dstLink { // tautan cukup dilepas, isi targetnya jangan dihapus
-			err = os.RemoveAll(dst)
-		} else {
-			err = os.Remove(dst)
-		}
-		if err != nil {
+		backup = filepath.Join(filepath.Dir(dst), backupPrefix+strconv.FormatInt(time.Now().UnixNano(), 36))
+		if err := os.Rename(dst, backup); err != nil {
 			return failErr(err)
 		}
 	}
+	restore := func() {
+		if backup == "" {
+			return
+		}
+		if err := os.Rename(backup, dst); err != nil {
+			slogError(fmt.Errorf("gagal mengembalikan tujuan dari cadangan %s: %w", backup, err))
+		}
+	}
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		restore()
 		return failErr(err)
 	}
 	if err := os.Rename(src, dst); err != nil {
+		restore()
 		return failErr(err)
+	}
+	if backup != "" {
+		if dstIsDir && !dstLink { // tautan cukup dilepas, isi targetnya jangan dihapus
+			err = os.RemoveAll(backup)
+		} else {
+			err = os.Remove(backup)
+		}
+		if err != nil {
+			slogError(fmt.Errorf("move berhasil, tetapi cadangan %s gagal dihapus: %w", backup, err))
+		}
 	}
 	return result{"destination": in.Destination, "moved": true}
 }

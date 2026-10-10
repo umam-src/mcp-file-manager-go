@@ -13,6 +13,21 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 - Workflow rilis (`.github/workflows/release.yml`): pada tag `v*` mencocokkan tag dengan `version.go`, menjalankan test, membangun `windows/amd64` dan `linux/amd64` (`-trimpath -ldflags "-s -w"`), lalu melampirkan biner dan `SHA256SUMS.txt` ke Release. Kedua workflow belum pernah dijalankan.
 - `.gitignore` (menutup `.env`, `*.exe`, `dist/`).
 
+## [0.2.4] - 2026-10-10
+
+### Fixed
+- `move_file` kini bisa mengganti huruf besar/kecil nama file atau folder (mis. `a.txt` ke `A.txt`) di Windows. Sebelumnya ditolak dengan "Sumber dan tujuan sama" karena nama tujuan dinormalkan ke huruf yang ada di disk. Di Linux perilaku tidak berubah (huruf dibedakan, `A.txt` dan `a.txt` adalah file berbeda). Pindah ke folder lain dengan nama beda huruf dan nama yang sama persis tidak berubah perilakunya. Versi Python belum mendapat perbaikan ini.
+
+## [0.2.3] - 2026-10-10
+
+### Security
+- `start_search` dengan `searchType=content` tidak lagi membaca isi file di luar `BASE_DIR` lewat symlink file. Tautan kini divalidasi seperti path lain; tautan yang keluar `BASE_DIR` atau rusak dilewati, tautan ke file di dalam `BASE_DIR` tetap dicari. Versi Python belum diperiksa untuk hal yang sama.
+
+## [0.2.2] - 2026-10-10
+
+### Fixed
+- `move_file` dengan `overwrite=true` tidak lagi menghapus tujuan sebelum pemindahan berhasil. Sebelumnya tujuan dihapus lebih dulu, sehingga bila `rename` gagal (mis. sumber sedang dibuka program lain di Windows) isi tujuan hilang dan sumber tidak berpindah. Kini tujuan dipindah ke cadangan sementara, lalu dihapus setelah berhasil atau dikembalikan bila gagal. Versi Python belum mendapat perbaikan ini.
+
 ## [0.2.1] - 2026-10-10
 
 ### Fixed

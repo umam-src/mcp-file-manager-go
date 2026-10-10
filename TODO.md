@@ -24,6 +24,9 @@ Milestone dan nomor versi ada di [ROADMAP.md](ROADMAP.md); file ini memecahnya m
 ### Saran optimasi (dikerjakan setelah disetujui)
 - [ ] Test junction hanya berjalan di Windows (junction dipakai sebagai cadangan symlink); pastikan symlink asli juga teruji di Linux lewat CI.
 - [x] 0.2.1: bug data hilang pada tautan diperbaiki (`delete_file`, `delete_dir`, `move_file` bekerja pada tautannya sendiri, `safeLeaf()` di `safepath.go`, 6 test regresi). Test `delete_file` pada symlink file dilewati di Windows tanpa hak symlink; baru terbukti jalan lewat CI Linux. Python belum diperbaiki (dikerjakan setelah Go selesai).
+- [x] 0.2.2: `move_file` dengan `overwrite=true` tidak lagi menghapus tujuan sebelum `rename` berhasil (cadangan sementara; test regresi gagal dulu, lalu lulus di Windows).
+- [x] 0.2.3: `start_search` (content) tidak lagi membaca file di luar `BASE_DIR` lewat symlink file. Test regresi memakai `symlinkOrSkip`, jadi baru terbukti jalan lewat CI Linux atau Windows dengan hak symlink; Python belum diperiksa.
+- [x] 0.2.4: ganti huruf besar/kecil nama lewat `move_file` (mis. `a.txt` ke `A.txt`) kini berhasil di Windows (`caseOnlyTarget`, 4 test); di Linux perilaku tidak berubah. Python menyusul.
 - [x] Ukuran `.exe` 12 MB menjadi 8,5 MB (windows) dan 8,3 MB (linux) dengan `-trimpath -ldflags "-s -w"`; dipakai di workflow rilis.
 - [x] 0.1.1: hemat token tahap 1 (`outputSchema` dibuang, deskripsi tool dipangkas dan disamakan dengan Python): `tools/list` 6.341 menjadi 4.140 karakter.
 - [ ] Hemat token tahap 2: sederhanakan tipe union `null` pada parameter opsional (`path`, `depth`, `length`, `expected_replacements`, `searchType`, dll.) dan hapus deskripsi parameter yang sudah jelas. Ukur ulang setelahnya.
