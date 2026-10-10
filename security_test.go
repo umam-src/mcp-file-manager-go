@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -239,11 +240,23 @@ func TestEndToEndOverProtocol(t *testing.T) {
 		}
 		return res
 	}
+	// Hasil hanya dikirim sekali: satu blok teks JSON di content, tanpa
+	// structuredContent (syarat utama hemat token).
 	structured := func(res *mcp.CallToolResult) map[string]any {
 		t.Helper()
-		out, ok := res.StructuredContent.(map[string]any)
+		if res.StructuredContent != nil {
+			t.Fatalf("StructuredContent harus kosong (hasil dobel), isinya: %#v", res.StructuredContent)
+		}
+		if len(res.Content) != 1 {
+			t.Fatalf("content harus satu blok, dapat %d", len(res.Content))
+		}
+		tc, ok := res.Content[0].(*mcp.TextContent)
 		if !ok {
-			t.Fatalf("StructuredContent = %#v", res.StructuredContent)
+			t.Fatalf("content[0] bukan teks: %#v", res.Content[0])
+		}
+		var out map[string]any
+		if err := json.Unmarshal([]byte(tc.Text), &out); err != nil {
+			t.Fatalf("content bukan JSON objek: %v: %s", err, tc.Text)
 		}
 		return out
 	}
@@ -291,7 +304,7 @@ func TestEndToEndOverProtocol(t *testing.T) {
 		t.Error("kegagalan tool tidak boleh ditandai isError; kontraknya {\"error\": ...}")
 	}
 	if _, ok := structured(res)["error"]; !ok {
-		t.Errorf("hasil seharusnya memuat error: %v", res.StructuredContent)
+		t.Errorf("hasil seharusnya memuat error: %v", res.Content)
 	}
 }
 

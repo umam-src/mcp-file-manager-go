@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -27,12 +28,18 @@ func instructions(baseDir string) string {
 // wrap menyesuaikan fungsi tool sederhana dengan bentuk handler SDK. Hasil
 // selalu dikembalikan sebagai nilai biasa, tidak pernah sebagai error protokol.
 //
-// Tipe hasil sengaja any: SDK hanya membuat outputSchema bila tipe hasilnya
-// bukan any, dan skema generik kosong itu hanya menambah token di tools/list
-// pada setiap permintaan. Isi hasil tetap dikirim sebagai structuredContent.
+// Hasil dikirim satu kali saja, sebagai satu blok teks JSON ringkas di
+// content. Tipe hasil sengaja any dan structuredContent sengaja tidak diisi:
+// SDK akan menggandakan isi yang sama ke structuredContent bila handler
+// mengembalikan nilai hasil, dan skema generik outputSchema hanya menambah
+// token di tools/list (syarat utama proyek: hemat token).
 func wrap[In any](f func(In) result) mcp.ToolHandlerFor[In, any] {
 	return func(_ context.Context, _ *mcp.CallToolRequest, in In) (*mcp.CallToolResult, any, error) {
-		return nil, f(in), nil
+		b, err := json.Marshal(f(in))
+		if err != nil {
+			b = []byte(`{"error":"hasil tool gagal diubah ke JSON"}`)
+		}
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(b)}}}, nil, nil
 	}
 }
 

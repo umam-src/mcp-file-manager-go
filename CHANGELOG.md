@@ -13,6 +13,11 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 - Workflow rilis (`.github/workflows/release.yml`): pada tag `v*` mencocokkan tag dengan `version.go`, menjalankan test, membangun `windows/amd64` dan `linux/amd64` (`-trimpath -ldflags "-s -w"`), lalu melampirkan biner dan `SHA256SUMS.txt` ke Release. Kedua workflow belum pernah dijalankan.
 - `.gitignore` (menutup `.env`, `*.exe`, `dist/`).
 
+## [0.2.5] - 2026-10-10
+
+### Changed
+- Hasil tool kini dikirim satu kali saja: satu blok teks JSON ringkas di `content`. Sebelumnya isi yang sama juga dikirim ulang di `structuredContent`, sehingga setiap hasil memakan token hampir dua kali lipat. Isi JSON (nama field dan nilai) tidak berubah; client yang membaca `structuredContent` harus membaca `content[0].text`. Versi Python belum mendapat perubahan ini.
+
 ## [0.2.4] - 2026-10-10
 
 ### Fixed
