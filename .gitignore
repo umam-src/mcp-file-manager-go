@@ -1,0 +1,11 @@
+# Rahasia dan file lokal
+.env
+*.local
+
+# Hasil build
+*.exe
+dist/
+
+# Editor
+.idea/
+.vscode/

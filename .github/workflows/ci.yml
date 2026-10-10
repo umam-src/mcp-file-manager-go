@@ -1,0 +1,54 @@
+name: CI
+
+# Hemat menit: hanya jalan bila kode Go, modul, atau workflow ini berubah.
+on:
+  push:
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
+      - CHANGELOG.md
+      - .github/workflows/ci.yml
+  pull_request:
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
+      - CHANGELOG.md
+      - .github/workflows/ci.yml
+
+# Batalkan run lama pada branch yang sama.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: gofmt
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then echo "$out"; echo "::error::File di atas belum diformat gofmt"; exit 1; fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test -count=1 ./...

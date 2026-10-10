@@ -1,0 +1,47 @@
+name: Release
+
+# Jalan saat tag versi (v0.3.0, dst.) didorong. Membangun .exe Windows dan biner Linux.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Cocokkan tag dengan version.go
+        shell: bash
+        run: |
+          ver=$(grep -oE 'const version = "[^"]+"' version.go | cut -d'"' -f2)
+          if [ "v${ver}" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} tidak sama dengan version.go (v${ver})"
+            exit 1
+          fi
+
+      - name: Test
+        run: go test -count=1 ./...
+
+      - name: Build windows/amd64 dan linux/amd64
+        shell: bash
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          mkdir dist
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/mcp-file-manager-go-windows-amd64.exe .
+          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/mcp-file-manager-go-linux-amd64 .
+          (cd dist && sha256sum * > SHA256SUMS.txt)
+
+      - name: Lampirkan ke Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*

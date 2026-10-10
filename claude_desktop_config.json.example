@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "file-manager-go": {
+      "command": "C:/path/to/mcp-file-manager-go.exe",
+      "env": {
+        "MCP_FILE_BASE": "C:/path/to/folder-yang-boleh-diakses"
+      }
+    }
+  }
+}
