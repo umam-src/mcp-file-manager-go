@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -15,16 +16,22 @@ type manager struct{ cfg *config }
 
 // instructions dikirim ke client saat inisialisasi (Claude Desktop
 // memasukkannya ke konteks model), supaya model tahu batas akses dan cara pakai.
-func instructions(baseDir string) string {
-	return fmt.Sprintf("Server file manager lokal. Semua path relatif terhadap BASE_DIR = %s. "+
-		"Path absolut di dalam BASE_DIR juga diterima; path di luarnya ditolak. "+
-		"Untuk melihat struktur pakai list_directory(depth); folder berat "+
-		"(.git, .venv, node_modules, dll.) tidak dimasuki. "+
-		"Untuk file besar pakai read_file dengan length dan offset (lanjutkan dari "+
-		"next_offset; offset negatif membaca ekor file). Pakai edit_block untuk "+
-		"perubahan kecil; write_file hanya untuk file baru, tulis ulang penuh, atau "+
-		"mode append. Line ending file yang sudah ada (CRLF/LF) dipertahankan. "+
-		"Hapus, timpa, dan pindah tidak bisa dibatalkan.", baseDir)
+func instructions(bases []string) string {
+	scope := fmt.Sprintf("Semua path relatif terhadap BASE_DIR = %s. "+
+		"Path absolut di dalam BASE_DIR juga diterima; path di luarnya ditolak. ", bases[0])
+	if len(bases) > 1 {
+		scope = fmt.Sprintf("Path relatif terhadap BASE_DIR = %s (folder pertama). "+
+			"Folder lain: %s. Path absolut di salah satu folder diterima; path di luar semuanya ditolak. ",
+			bases[0], strings.Join(bases[1:], "; "))
+	}
+	return "Server file manager lokal. " + scope +
+		"Untuk melihat struktur pakai list_directory(depth); folder berat " +
+		"(.git, .venv, node_modules, dll.) tidak dimasuki. " +
+		"Untuk file besar pakai read_file dengan length dan offset (lanjutkan dari " +
+		"next_offset; offset negatif membaca ekor file). Pakai edit_block untuk " +
+		"perubahan kecil; write_file hanya untuk file baru, tulis ulang penuh, atau " +
+		"mode append. Line ending file yang sudah ada (CRLF/LF) dipertahankan. " +
+		"Hapus, timpa, dan pindah tidak bisa dibatalkan."
 }
 
 // wrap menyesuaikan fungsi tool sederhana dengan bentuk handler SDK. Hasil
@@ -147,7 +154,7 @@ func newServer(cfg *config) *mcp.Server {
 	m := &manager{cfg: cfg}
 	srv := mcp.NewServer(
 		&mcp.Implementation{Name: "mcp-file-manager", Version: version},
-		&mcp.ServerOptions{Instructions: instructions(cfg.baseDir)},
+		&mcp.ServerOptions{Instructions: instructions(cfg.allBases())},
 	)
 	srv.AddReceivingMiddleware(dropNullArgs, slimListTools)
 

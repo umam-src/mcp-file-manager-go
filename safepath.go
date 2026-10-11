@@ -29,11 +29,12 @@ func within(base, p string) bool {
 }
 
 // safe menerjemahkan path dari pemanggil menjadi path absolut yang pasti
-// berada di dalam baseDir. Path relatif dihitung dari baseDir; path absolut
-// diterima selama hasil akhirnya masih di dalam baseDir.
+// berada di dalam salah satu folder dasar. Path relatif dihitung dari baseDir
+// (folder pertama); path absolut diterima selama hasil akhirnya masih di dalam
+// salah satu folder dasar.
 //
 // Yang ditolak: path kosong, null byte, traversal (..), dan symlink (termasuk
-// symlink yang targetnya belum ada) yang mengarah keluar baseDir.
+// symlink yang targetnya belum ada) yang mengarah keluar semua folder dasar.
 // Semua akses file dari input pemanggil WAJIB lewat fungsi ini.
 func (c *config) safe(p string) (string, error) {
 	if p == "" {
@@ -54,8 +55,12 @@ func (c *config) safe(p string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if !within(c.baseDir, resolved) {
-		return "", &pathError{fmt.Sprintf("Akses ditolak: '%s' berada di luar %s", p, c.baseDir)}
+	if !c.inAnyBase(resolved) {
+		where := c.baseDir
+		if len(c.otherDirs) > 0 {
+			where = strings.Join(c.allBases(), "; ")
+		}
+		return "", &pathError{fmt.Sprintf("Akses ditolak: '%s' berada di luar %s", p, where)}
 	}
 	return resolved, nil
 }
@@ -210,7 +215,7 @@ func (c *config) safeLeaf(p string) (full string, isLink bool, err error) {
 	if err != nil {
 		return "", false, err
 	}
-	if resolved == c.baseDir {
+	if c.isBase(resolved) {
 		return resolved, false, nil
 	}
 	cand := p

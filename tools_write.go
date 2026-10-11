@@ -237,7 +237,7 @@ func (m *manager) deleteDir(in deleteDirInput) result {
 	if err != nil {
 		return failErr(err)
 	}
-	if full == m.cfg.baseDir {
+	if m.cfg.isBase(full) {
 		return fail("tidak boleh menghapus BASE_DIR itu sendiri")
 	}
 	exists, isDir, _, err := statKind(full)

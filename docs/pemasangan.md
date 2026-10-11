@@ -36,7 +36,7 @@ Buka berkas pengaturan `%APPDATA%\Claude\claude_desktop_config.json`, lalu tamba
 ```
 
 - Pakai garis miring biasa (`/`) pada path, atau garis miring balik ganda (`\\`).
-- `MCP_FILE_BASE` wajib. Bila kosong atau folder tidak ada, program berhenti dengan pesan yang jelas.
+- `MCP_FILE_BASE` wajib. Bila kosong atau semua folder tidak ada, program berhenti dengan pesan yang jelas. Untuk beberapa folder, pisahkan dengan `;` (mis. `C:/Proyek;D:/Arsip`); path relatif dihitung dari folder pertama, dan folder yang bertumpang tindih ditolak.
 - Bila `mcpServers` sudah berisi server lain, tambahkan `"file-manager-go"` di dalamnya, jangan buat blok kedua.
 - Nama tool versi Go sama persis dengan versi Python (`file-manager`) dan Desktop Commander. Bila beberapa server dipasang bersamaan, asisten melihat tool bernama sama; pasang salah satu saja untuk folder yang sama, atau pastikan pembagian tugasnya jelas.
 - Pengaturan lain (batas tulis, tingkat log) ada di [alat.md](alat.md).

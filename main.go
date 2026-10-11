@@ -3,7 +3,8 @@
 //
 // Variabel lingkungan:
 //
-//	MCP_FILE_BASE            folder yang boleh diakses (wajib)
+//	MCP_FILE_BASE            folder yang boleh diakses (wajib); beberapa folder dipisah
+//	                         ';' (Windows) atau ':' (Linux), path relatif dari folder pertama
 //	MCP_FILE_MAX_WRITE_BYTES batas ukuran tulis per operasi (bawaan 5 MiB)
 //	MCP_FILE_LOG_LEVEL       level log ke stderr: DEBUG, INFO, WARN, ERROR (bawaan INFO)
 //
@@ -38,7 +39,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	slog.Info("mcp-file-manager mulai", "versi", version, "base_dir", cfg.baseDir)
+	slog.Info("mcp-file-manager mulai", "versi", version, "base_dir", cfg.baseDir, "folder_lain", cfg.otherDirs)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()

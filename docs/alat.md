@@ -16,7 +16,7 @@ Kontrak mengikuti `mcp-file-manager` Python 0.4.0, kecuali perilaku tautan pada 
 | `get_file_info` | `path*` | Tipe, ukuran, waktu ubah (UTC), dan jumlah baris untuk file teks (tidak untuk file biner atau di atas 10 MiB). Hanya baca. |
 | `start_search` | `pattern*`, `path`, `searchType` (`files`), `filePattern`, `ignoreCase` (true), `maxResults` (100) | `files` mencari nama file/folder (teks biasa, atau wildcard `*` `?`); `content` mencari teks biasa di dalam file (file biner dan di atas 5 MiB dilewati; tautan yang keluar `BASE_DIR` atau rusak dilewati; `filePattern` membatasi nama file). Hasil dibatasi `maxResults` (maksimal 1000, `truncated`). Hanya baca. |
 | `delete_file` | `path*` | Hapus file (bukan folder). Pada tautan, yang dihapus tautannya. |
-| `delete_dir` | `path*`, `recursive` (false), `dry_run` (false) | Hapus folder; bawaannya hanya bila kosong. `BASE_DIR` tidak dapat dihapus. Pada tautan ke folder, hanya tautannya yang dilepas (hasil memuat `link: true`; `recursive` tidak berpengaruh). Dengan `dry_run=true` tidak ada yang dihapus (`deleted: false`): hasil rekursif melaporkan `files`, `dirs`, `bytes`, dan `truncated: true` bila lebih dari 100.000 entri (hitungan sebagian); hasil tidak rekursif melaporkan `empty` dan `would_delete`; tautan di dalam pohon dihitung sebagai file dan tidak diikuti. |
+| `delete_dir` | `path*`, `recursive` (false), `dry_run` (false) | Hapus folder; bawaannya hanya bila kosong. `BASE_DIR` mana pun tidak dapat dihapus. Pada tautan ke folder, hanya tautannya yang dilepas (hasil memuat `link: true`; `recursive` tidak berpengaruh). Dengan `dry_run=true` tidak ada yang dihapus (`deleted: false`): hasil rekursif melaporkan `files`, `dirs`, `bytes`, dan `truncated: true` bila lebih dari 100.000 entri (hitungan sebagian); hasil tidak rekursif melaporkan `empty` dan `would_delete`; tautan di dalam pohon dihitung sebagai file dan tidak diikuti. |
 
 Annotations: `list_directory`, `read_file`, `read_multiple_files`, `get_file_info`, dan `start_search` bertanda hanya baca; `write_file`, `edit_block`, `move_file`, `delete_file`, dan `delete_dir` bertanda destruktif.
 
@@ -24,7 +24,7 @@ Annotations: `list_directory`, `read_file`, `read_multiple_files`, `get_file_inf
 
 | Variabel | Bawaan | Keterangan |
 |---|---|---|
-| `MCP_FILE_BASE` | tidak ada (wajib) | Folder yang boleh diakses; harus ada. Bila kosong, server berhenti dengan pesan yang jelas. |
+| `MCP_FILE_BASE` | tidak ada (wajib) | Folder yang boleh diakses; harus ada. Beberapa folder dipisah `;` (Windows) atau `:` (Linux): path relatif dihitung dari folder pertama yang tersedia, path absolut di salah satu folder diterima. Folder yang tidak ada atau bukan folder dilewati dengan peringatan di stderr selama masih ada satu yang valid; folder yang bertumpang tindih (sama, atau satu di dalam yang lain) ditolak saat mulai. Folder jarak jauh (UNC `\\server\share`, mount CIFS/NFS) boleh sebagai path yang dipasang sistem operasi. `move_file` antar-folder memakai rename sistem operasi dan gagal dengan pesan galat bila berbeda volume. Bila kosong, server berhenti dengan pesan yang jelas. |
 | `MCP_FILE_MAX_WRITE_BYTES` | 5 MiB | Batas ukuran tulis. Nilai tidak valid (bukan angka, nol, negatif) memakai bawaan dan dicatat sebagai peringatan. |
 | `MCP_FILE_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, atau `error`; log ke stderr. Nilai tidak valid memakai `info`. |
 
@@ -32,7 +32,7 @@ Tidak ada dukungan berkas `.env`; isi variabel lewat pengaturan client MCP.
 
 ## Keamanan path
 
-Ditolak: path kosong, null byte, traversal (`..`), serta symlink dan junction Windows yang mengarah keluar `BASE_DIR`, termasuk bila targetnya belum ada. Semua akses lewat `safe()` di `safepath.go`. `delete_file`, `delete_dir`, dan `move_file` memakai `safeLeaf()`, yang tidak mengikuti tautan pada komponen terakhir sehingga yang dihapus atau dipindah adalah tautannya, bukan isi targetnya; tautan yang mengarah keluar `BASE_DIR` tetap ditolak. Selebihnya `resolveLinks` mengikuti symlink dan junction komponen demi komponen karena `filepath.EvalSymlinks` di Go (Windows) tidak mengikuti junction.
+Ditolak: path kosong, null byte, traversal (`..`), serta symlink dan junction Windows yang mengarah keluar semua folder dasar (`BASE_DIR`), termasuk bila targetnya belum ada. Semua akses lewat `safe()` di `safepath.go`. `delete_file`, `delete_dir`, dan `move_file` memakai `safeLeaf()`, yang tidak mengikuti tautan pada komponen terakhir sehingga yang dihapus atau dipindah adalah tautannya, bukan isi targetnya; tautan yang mengarah keluar `BASE_DIR` tetap ditolak. Selebihnya `resolveLinks` mengikuti symlink dan junction komponen demi komponen karena `filepath.EvalSymlinks` di Go (Windows) tidak mengikuti junction.
 
 ## Build dan test
 

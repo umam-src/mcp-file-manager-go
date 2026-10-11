@@ -47,7 +47,7 @@ Butir di bawah berasal dari bagian "Masih terbuka" di `TODO.md` versi Python. Ko
 - [ ] `list_directory`: parameter opsional `exclude` dan `max_entries`.
 - [x] `delete_dir`: dry-run/preview sebelum hapus rekursif (kode dan test selesai 2026-10-11, belum dirilis).
 - [ ] Tool `search_files` (cari teks di banyak file) dan `get_file_info` (ukuran, waktu ubah).
-- [ ] `MCP_FILE_BASE` boleh berisi beberapa folder (dipisah `;` di Windows, `:` di Linux). Satu nilai berjalan seperti sekarang; tool dan kontrak tidak berubah. Folder jarak jauh (UNC `\\server\share`, mount CIFS/NFS) boleh sebagai path yang dipasang sistem operasi; server tidak mengimplementasi protokol jaringan. Lihat keputusan 2026-10-10 di `Keputusan.md`. Paritas: Python menyusul dengan perilaku yang sama.
+- [x] `MCP_FILE_BASE` boleh berisi beberapa folder (dipisah `;` di Windows, `:` di Linux); kode, test (`multi_base_test.go`), dan docs selesai 2026-10-11, belum dirilis; uji folder jarak jauh (UNC/CIFS/NFS) belum dilakukan. Satu nilai berjalan seperti sekarang; tool dan kontrak tidak berubah. Folder jarak jauh (UNC `\\server\share`, mount CIFS/NFS) boleh sebagai path yang dipasang sistem operasi; server tidak mengimplementasi protokol jaringan. Lihat keputusan 2026-10-10 di `Keputusan.md`. Paritas: Python menyusul dengan perilaku yang sama.
 
 ## Di luar cakupan
 
