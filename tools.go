@@ -221,7 +221,7 @@ func newServer(cfg *config) *mcp.Server {
 
 	addTool(srv, &mcp.Tool{
 		Name:        "delete_dir",
-		Description: "Hapus folder. Bawaannya hanya bila kosong; recursive=true menghapus beserta isinya.",
+		Description: "Hapus folder. Bawaannya hanya bila kosong; recursive=true menghapus beserta isinya; dry_run=true hanya melaporkan isinya tanpa menghapus.",
 		Annotations: annotations("Hapus direktori", false, true, true),
 	}, m.deleteDir)
 

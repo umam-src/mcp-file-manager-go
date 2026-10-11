@@ -45,7 +45,7 @@ Keputusan "Adopsi tool Desktop Commander" di `Keputusan.md`; kontrak identik den
 Butir di bawah berasal dari bagian "Masih terbuka" di `TODO.md` versi Python. Kontrak harus sama dengan Python; bila Python mengerjakannya lebih dulu, Go menyusul dengan kontrak yang sama.
 
 - [ ] `list_directory`: parameter opsional `exclude` dan `max_entries`.
-- [ ] `delete_dir`: dry-run/preview sebelum hapus rekursif.
+- [x] `delete_dir`: dry-run/preview sebelum hapus rekursif (kode dan test selesai 2026-10-11, belum dirilis).
 - [ ] Tool `search_files` (cari teks di banyak file) dan `get_file_info` (ukuran, waktu ubah).
 - [ ] `MCP_FILE_BASE` boleh berisi beberapa folder (dipisah `;` di Windows, `:` di Linux). Satu nilai berjalan seperti sekarang; tool dan kontrak tidak berubah. Folder jarak jauh (UNC `\\server\share`, mount CIFS/NFS) boleh sebagai path yang dipasang sistem operasi; server tidak mengimplementasi protokol jaringan. Lihat keputusan 2026-10-10 di `Keputusan.md`. Paritas: Python menyusul dengan perilaku yang sama.
 

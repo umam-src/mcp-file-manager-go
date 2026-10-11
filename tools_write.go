@@ -177,6 +177,59 @@ func (m *manager) deleteFile(in pathInput) result {
 type deleteDirInput struct {
 	Path      string `json:"path"`
 	Recursive bool   `json:"recursive,omitempty"`
+	DryRun    bool   `json:"dry_run,omitempty"`
+}
+
+// maxDryRunEntries membatasi jumlah entri yang dihitung pada dry_run rekursif
+// agar pratinjau folder sangat besar tetap cepat; lewat batas, hasil memuat
+// truncated=true dan hitungannya sebagian.
+var maxDryRunEntries = 100000
+
+// dryRunDeleteDir melaporkan apa yang akan dihapus delete_dir tanpa menghapus
+// apa pun. WalkDir tidak mengikuti tautan; tautan di dalam pohon dihitung
+// sebagai file dan ukurannya tidak ditambahkan.
+func dryRunDeleteDir(full string, in deleteDirInput) result {
+	if !in.Recursive {
+		entries, err := os.ReadDir(full)
+		if err != nil {
+			return failErr(err)
+		}
+		empty := len(entries) == 0
+		return result{"path": in.Path, "dry_run": true, "deleted": false, "recursive": false, "empty": empty, "would_delete": empty}
+	}
+	var files, dirs, count int
+	var size int64
+	truncated := false
+	err := filepath.WalkDir(full, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if p == full {
+			return nil
+		}
+		if count >= maxDryRunEntries {
+			truncated = true
+			return filepath.SkipAll
+		}
+		count++
+		if d.IsDir() {
+			dirs++
+			return nil
+		}
+		files++
+		if info, e := d.Info(); e == nil && info.Mode().IsRegular() {
+			size += info.Size()
+		}
+		return nil
+	})
+	if err != nil {
+		return failErr(err)
+	}
+	r := result{"path": in.Path, "dry_run": true, "deleted": false, "recursive": true, "files": files, "dirs": dirs, "bytes": size, "would_delete": true}
+	if truncated {
+		r["truncated"] = true
+	}
+	return r
 }
 
 func (m *manager) deleteDir(in deleteDirInput) result {
@@ -198,11 +251,17 @@ func (m *manager) deleteDir(in deleteDirInput) result {
 		return fail("path bukan direktori, gunakan tool delete_file")
 	}
 	if isLink {
+		if in.DryRun {
+			return result{"path": in.Path, "dry_run": true, "deleted": false, "link": true}
+		}
 		// Hanya tautannya yang dihapus; isi folder targetnya tidak disentuh.
 		if err := os.Remove(full); err != nil {
 			return failErr(err)
 		}
 		return result{"path": in.Path, "deleted": true, "link": true}
+	}
+	if in.DryRun {
+		return dryRunDeleteDir(full, in)
 	}
 	if in.Recursive {
 		err = os.RemoveAll(full)

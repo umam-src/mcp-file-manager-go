@@ -19,7 +19,7 @@ Milestone dan nomor versi ada di [ROADMAP.md](ROADMAP.md); file ini memecahnya m
 
 ### 0.4.0 — Fitur lanjutan
 - [ ] `list_directory`: `exclude` dan `max_entries` opsional.
-- [ ] `delete_dir`: dry-run/preview.
+- [x] `delete_dir`: dry-run/preview (belum dirilis; lihat `[Unreleased]` di CHANGELOG).
 - [ ] Beberapa folder di `MCP_FILE_BASE` (hemat token tahap 2 sudah selesai di 0.2.6; ukur `tools/list` dan `instructions` sebelum dan sesudah). Syarat:
   - Setiap path lewat `safe()` dan harus berada di salah satu folder; symlink dan junction diperiksa per folder (`resolveLinks`).
   - Path relatif dihitung dari folder pertama; `delete_dir` tidak boleh menghapus folder dasar mana pun; folder dasar yang tumpang tindih ditolak saat mulai.
