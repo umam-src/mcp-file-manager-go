@@ -13,6 +13,11 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 - Workflow rilis (`.github/workflows/release.yml`): tag `vX.Y.Z` mencocokkan tag dengan `version.go`, menjalankan test, membangun `windows/amd64` dan `linux/amd64` (`-trimpath -ldflags "-s -w"`), lalu melampirkan biner dan `SHA256SUMS.txt` ke Release; tag `vX.Y.Z-rc.N` menghasilkan pre-release. Pull request dan build manual (Run workflow) di branch mana pun hanya menghasilkan artifact 7 hari (Windows saja), tanpa tag dan Release. Belum pernah dijalankan.
 - `.gitignore` (menutup `.env`, `*.exe`, `dist/`).
 
+## [0.2.7] - 2026-10-11
+
+### Changed
+- Hemat token tahap 3: `additionalProperties:false` tidak lagi dikirim di skema `tools/list` (11 kali); `tools/list` turun dari 5.386 menjadi 5.067 karakter. Keamanan tidak berubah: parameter yang tidak dikenal tetap ditolak saat `tools/call` dengan pesan galat yang sama, karena skema yang terdaftar di server tidak dipangkas, hanya salinan yang dikirim ke client. Nama, nilai bawaan, dan hasil tool tidak berubah.
+
 ## [0.2.6] - 2026-10-11
 
 ### Changed

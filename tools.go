@@ -96,6 +96,34 @@ func dropNullArgs(next mcp.MethodHandler) mcp.MethodHandler {
 	}
 }
 
+// slimListTools membuang "additionalProperties":false dari skema yang dikirim
+// di tools/list (hemat token: syarat utama proyek). Skema yang terdaftar di
+// server tidak diubah, jadi parameter yang tidak dikenal tetap ditolak saat
+// tools/call dengan pesan galat yang sama; hanya salinan untuk client yang
+// dirapikan. Salinan dibuat agar skema terdaftar dan Tool bersama tidak
+// ikut berubah.
+func slimListTools(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		res, err := next(ctx, method, req)
+		if lr, ok := res.(*mcp.ListToolsResult); ok && err == nil && method == "tools/list" {
+			tools := make([]*mcp.Tool, len(lr.Tools))
+			for i, t := range lr.Tools {
+				tools[i] = t
+				if s, ok := t.InputSchema.(*jsonschema.Schema); ok && s != nil && s.AdditionalProperties != nil {
+					sc, tc := *s, *t
+					sc.AdditionalProperties = nil
+					tc.InputSchema = &sc
+					tools[i] = &tc
+				}
+			}
+			out := *lr
+			out.Tools = tools
+			return &out, nil
+		}
+		return res, err
+	}
+}
+
 // addTool mendaftarkan tool dengan skema input yang sudah dirapikan.
 func addTool[In any](srv *mcp.Server, t *mcp.Tool, f func(In) result) {
 	t.InputSchema = slimSchema[In]()
@@ -121,7 +149,7 @@ func newServer(cfg *config) *mcp.Server {
 		&mcp.Implementation{Name: "mcp-file-manager", Version: version},
 		&mcp.ServerOptions{Instructions: instructions(cfg.baseDir)},
 	)
-	srv.AddReceivingMiddleware(dropNullArgs)
+	srv.AddReceivingMiddleware(dropNullArgs, slimListTools)
 
 	// Deskripsi tool: maksimal dua kalimat (aturan "Desain MCP hemat token").
 	// Nama, urutan, dan teksnya disamakan dengan versi Python.
