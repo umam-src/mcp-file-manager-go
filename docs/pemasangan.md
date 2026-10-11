@@ -12,7 +12,7 @@ go build -trimpath -ldflags "-s -w" -o mcp-file-manager-go.exe .
 
 Simpan di folder tetap yang tidak akan dipindah, misalnya `C:\Alat\mcp-file-manager-go.exe`. Untuk Linux, bangun dengan `go build -trimpath -ldflags "-s -w" -o mcp-file-manager-go .` di mesin Linux.
 
-Workflow rilis (`.github/workflows/release.yml`) sudah disiapkan untuk melampirkan biner Windows dan Linux ke Release saat tag versi didorong, tetapi belum pernah dijalankan.
+Workflow rilis (`.github/workflows/release.yml`) melampirkan biner Windows dan Linux ke Release saat tag versi (`v*`) didorong. Untuk mencoba build tanpa merilis, jalankan workflow secara manual di branch `dev` (Actions, Release, Run workflow); hasilnya artifact sementara selama 7 hari. Keduanya belum pernah dijalankan.
 
 ## 2. Pilih folder yang boleh diakses
 

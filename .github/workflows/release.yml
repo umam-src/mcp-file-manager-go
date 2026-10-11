@@ -1,15 +1,26 @@
 name: Release
 
-# Jalan saat tag versi (v0.3.0, dst.) didorong. Membangun .exe Windows dan biner Linux.
+# Dua pemicu, satu pekerjaan build:
+# - Tag versi (v0.3.0, dst.) didorong: test, cocokkan dengan version.go, build, lalu buat Release.
+# - Manual (Actions > Release > Run workflow) pada branch dev: test dan build saja,
+#   hasilnya artifact sementara (7 hari), tanpa tag dan tanpa Release.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+
+# Hemat menit: build manual lama dibatalkan bila diulang; rilis tag tidak pernah dibatalkan.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
 
 permissions:
   contents: write
 
 jobs:
   build:
+    # Manual hanya diizinkan di branch dev.
+    if: github.ref_type == 'tag' || github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,6 +31,7 @@ jobs:
           cache: true
 
       - name: Cocokkan tag dengan version.go
+        if: github.ref_type == 'tag'
         shell: bash
         run: |
           ver=$(grep -oE 'const version = "[^"]+"' version.go | cut -d'"' -f2)
@@ -41,7 +53,17 @@ jobs:
           GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/mcp-file-manager-go-linux-amd64 .
           (cd dist && sha256sum * > SHA256SUMS.txt)
 
+      - name: Simpan artifact (build manual dev)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-file-manager-go-dev-${{ github.run_number }}
+          path: dist/*
+          retention-days: 7
+          if-no-files-found: error
+
       - name: Lampirkan ke Release
+        if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
