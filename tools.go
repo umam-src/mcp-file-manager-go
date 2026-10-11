@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -43,6 +45,63 @@ func wrap[In any](f func(In) result) mcp.ToolHandlerFor[In, any] {
 	}
 }
 
+// slimSchema membangkitkan skema input dari struct In seperti SDK, lalu
+// mengubah tipe union ["null", T] pada parameter opsional (field pointer)
+// menjadi T saja. Parameter opsional cukup tidak dikirim; "null" hanya
+// menambah token di tools/list (syarat utama proyek: hemat token). Struct,
+// nilai bawaan, dan daftar required tidak berubah.
+func slimSchema[In any]() *jsonschema.Schema {
+	s, err := jsonschema.For[In](nil)
+	if err != nil {
+		panic(err)
+	}
+	for _, prop := range s.Properties {
+		if len(prop.Types) != 2 {
+			continue
+		}
+		for i, typ := range prop.Types {
+			if typ == "null" {
+				prop.Type, prop.Types = prop.Types[1-i], nil
+				break
+			}
+		}
+	}
+	return s
+}
+
+// dropNullArgs membuang argumen bernilai null dari panggilan tool sebelum
+// divalidasi skema. Skema ramping tidak lagi menerima "null", sedangkan
+// sebagian client mengirim null untuk parameter yang dikosongkan; tanpa ini
+// panggilan semacam itu yang sebelumnya berhasil akan ditolak.
+func dropNullArgs(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		if r, ok := req.(*mcp.CallToolRequest); ok && method == "tools/call" && r.Params != nil && len(r.Params.Arguments) > 0 {
+			var args map[string]json.RawMessage
+			if json.Unmarshal(r.Params.Arguments, &args) == nil {
+				changed := false
+				for k, v := range args {
+					if bytes.Equal(bytes.TrimSpace(v), []byte("null")) {
+						delete(args, k)
+						changed = true
+					}
+				}
+				if changed {
+					if b, err := json.Marshal(args); err == nil {
+						r.Params.Arguments = b
+					}
+				}
+			}
+		}
+		return next(ctx, method, req)
+	}
+}
+
+// addTool mendaftarkan tool dengan skema input yang sudah dirapikan.
+func addTool[In any](srv *mcp.Server, t *mcp.Tool, f func(In) result) {
+	t.InputSchema = slimSchema[In]()
+	mcp.AddTool(srv, t, wrap(f))
+}
+
 // annotations memberi tahu client mana tool yang aman (read-only) dan mana
 // yang destruktif, supaya client bisa meminta persetujuan pengguna.
 func annotations(title string, readOnly, destructive, idempotent bool) *mcp.ToolAnnotations {
@@ -62,80 +121,81 @@ func newServer(cfg *config) *mcp.Server {
 		&mcp.Implementation{Name: "mcp-file-manager", Version: version},
 		&mcp.ServerOptions{Instructions: instructions(cfg.baseDir)},
 	)
+	srv.AddReceivingMiddleware(dropNullArgs)
 
 	// Deskripsi tool: maksimal dua kalimat (aturan "Desain MCP hemat token").
 	// Nama, urutan, dan teksnya disamakan dengan versi Python.
-	mcp.AddTool(srv, &mcp.Tool{
+	addTool(srv, &mcp.Tool{
 		Name: "list_directory",
 		Description: "Daftar isi folder sampai kedalaman depth, diberi awalan [DIR] atau [FILE]. " +
 			"Folder berat (.git, .venv, node_modules, dll.) tidak dimasuki dan hasil dibatasi 1000 entri ('truncated').",
 		Annotations: annotations("Daftar folder", true, false, true),
-	}, wrap(m.listDirectory))
+	}, m.listDirectory)
 
-	mcp.AddTool(srv, &mcp.Tool{
+	addTool(srv, &mcp.Tool{
 		Name: "read_file",
 		Description: "Baca file teks (UTF-8) per baris; offset negatif membaca baris dari akhir file, dan file besar dilanjutkan dari 'next_offset'. " +
 			"Hasil dibatasi karakternya ('truncated'); 'line_ending' melaporkan LF, CRLF, CR, atau mixed.",
 		Annotations: annotations("Baca file", true, false, true),
-	}, wrap(m.readFile))
+	}, m.readFile)
 
-	mcp.AddTool(srv, &mcp.Tool{
+	addTool(srv, &mcp.Tool{
 		Name: "read_multiple_files",
 		Description: "Baca beberapa file (maks 20) sekaligus dengan aturan read_file; batas karakter dibagi untuk semua file. " +
 			"File yang gagal dibaca memuat 'error' tanpa menggagalkan yang lain.",
 		Annotations: annotations("Baca banyak file", true, false, true),
-	}, wrap(m.readMultipleFiles))
+	}, m.readMultipleFiles)
 
-	mcp.AddTool(srv, &mcp.Tool{
+	addTool(srv, &mcp.Tool{
 		Name: "write_file",
 		Description: "Tulis seluruh file (mode rewrite, bawaan) atau tambah di akhir (mode append); folder induk dibuat bila perlu. " +
 			"Line ending file lama dipertahankan, file baru memakai LF; ada batas ukuran.",
 		Annotations: annotations("Tulis file", false, true, false),
-	}, wrap(m.writeFile))
+	}, m.writeFile)
 
-	mcp.AddTool(srv, &mcp.Tool{
+	addTool(srv, &mcp.Tool{
 		Name: "edit_block",
 		Description: "Ganti old_string dengan new_string; gagal bila jumlah kemunculannya berbeda dari expected_replacements (bawaan 1). " +
 			"old_string tidak boleh kosong; CRLF dicocokkan otomatis dan line ending dipertahankan.",
 		Annotations: annotations("Edit file", false, true, false),
-	}, wrap(m.editBlock))
+	}, m.editBlock)
 
-	mcp.AddTool(srv, &mcp.Tool{
+	addTool(srv, &mcp.Tool{
 		Name:        "create_directory",
 		Description: "Buat folder (rekursif; tidak error bila sudah ada).",
 		Annotations: annotations("Buat direktori", false, false, true),
-	}, wrap(m.createDirectory))
+	}, m.createDirectory)
 
-	mcp.AddTool(srv, &mcp.Tool{
+	addTool(srv, &mcp.Tool{
 		Name:        "move_file",
 		Description: "Pindah atau ganti nama file/folder dari source ke destination; overwrite=true menimpa destination.",
 		Annotations: annotations("Pindah/ganti nama", false, true, false),
-	}, wrap(m.moveFile))
+	}, m.moveFile)
 
-	mcp.AddTool(srv, &mcp.Tool{
+	addTool(srv, &mcp.Tool{
 		Name:        "get_file_info",
 		Description: "Info file atau folder: tipe, ukuran, waktu ubah (UTC), dan jumlah baris untuk file teks.",
 		Annotations: annotations("Info file", true, false, true),
-	}, wrap(m.getFileInfo))
+	}, m.getFileInfo)
 
-	mcp.AddTool(srv, &mcp.Tool{
+	addTool(srv, &mcp.Tool{
 		Name: "start_search",
 		Description: "Cari nama file/folder (searchType=files, bawaan; pattern teks biasa atau wildcard * ?) atau teks di dalam file (searchType=content, teks biasa). " +
 			"Hasil langsung dikembalikan dan dibatasi maxResults ('truncated'); filePattern membatasi nama file pada pencarian isi.",
 		Annotations: annotations("Cari", true, false, true),
-	}, wrap(m.startSearch))
+	}, m.startSearch)
 
-	mcp.AddTool(srv, &mcp.Tool{
+	addTool(srv, &mcp.Tool{
 		Name:        "delete_file",
 		Description: "Hapus file (bukan folder).",
 		Annotations: annotations("Hapus file", false, true, true),
-	}, wrap(m.deleteFile))
+	}, m.deleteFile)
 
-	mcp.AddTool(srv, &mcp.Tool{
+	addTool(srv, &mcp.Tool{
 		Name:        "delete_dir",
 		Description: "Hapus folder. Bawaannya hanya bila kosong; recursive=true menghapus beserta isinya.",
 		Annotations: annotations("Hapus direktori", false, true, true),
-	}, wrap(m.deleteDir))
+	}, m.deleteDir)
 
 	return srv
 }
