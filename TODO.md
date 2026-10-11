@@ -20,6 +20,12 @@ Milestone dan nomor versi ada di [ROADMAP.md](ROADMAP.md); file ini memecahnya m
 ### 0.4.0 — Fitur lanjutan
 - [ ] `list_directory`: `exclude` dan `max_entries` opsional.
 - [ ] `delete_dir`: dry-run/preview.
+- [ ] Beberapa folder di `MCP_FILE_BASE` (dikerjakan setelah hemat token tahap 2). Syarat:
+  - Setiap path lewat `safe()` dan harus berada di salah satu folder; symlink dan junction diperiksa per folder (`resolveLinks`).
+  - Path relatif dihitung dari folder pertama; `delete_dir` tidak boleh menghapus folder dasar mana pun; folder dasar yang tumpang tindih ditolak saat mulai.
+  - Ukur `tools/list` dan `instructions` sebelum dan sesudah (tidak boleh naik tanpa alasan tertulis); perbarui `docs/alat.md` dan `docs/pemasangan.md`.
+  - Uji folder jarak jauh: UNC di Windows (mis. `\\localhost\C$` untuk uji lokal), mount NFS/CIFS di Linux; kasus gagal (share putus, hak akses ditolak).
+  - Pertanyaan terbuka ada di `Keputusan.md` (folder tidak tersedia saat mulai, `move_file` antar-folder, batas waktu share yang macet).
 
 ### Saran optimasi (dikerjakan setelah disetujui)
 - [ ] Test junction hanya berjalan di Windows (junction dipakai sebagai cadangan symlink); pastikan symlink asli juga teruji di Linux lewat CI.
