@@ -1,15 +1,22 @@
 name: Release
 
-# Dua pemicu, satu pekerjaan build:
-# - Tag versi (v0.3.0, dst.) didorong: test, cocokkan dengan version.go, build, lalu buat Release.
-# - Manual (Actions > Release > Run workflow) pada branch dev: test dan build saja,
-#   hasilnya artifact sementara (7 hari), tanpa tag dan tanpa Release.
+# Satu pekerjaan build, tiga pemicu:
+# - Tag vX.Y.Z didorong: test, cocokkan dengan version.go, build Windows dan Linux, buat Release.
+# - Tag vX.Y.Z-rc.N didorong: sama, tetapi Release ditandai pre-release (uji sebelum rilis sungguhan).
+# - Pull request atau manual (Actions > Release > Run workflow) di branch mana pun:
+#   hanya artifact sementara (7 hari, Windows saja), tanpa tag dan tanpa Release.
 on:
   push:
     tags: ["v*"]
+  pull_request:
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
+      - .github/workflows/release.yml
   workflow_dispatch:
 
-# Hemat menit: build manual lama dibatalkan bila diulang; rilis tag tidak pernah dibatalkan.
+# Hemat menit: build PR/manual lama dibatalkan bila diulang; rilis tag tidak pernah dibatalkan.
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: ${{ github.ref_type != 'tag' }}
@@ -19,8 +26,6 @@ permissions:
 
 jobs:
   build:
-    # Manual hanya diizinkan di branch dev.
-    if: github.ref_type == 'tag' || github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,29 +40,35 @@ jobs:
         shell: bash
         run: |
           ver=$(grep -oE 'const version = "[^"]+"' version.go | cut -d'"' -f2)
-          if [ "v${ver}" != "${GITHUB_REF_NAME}" ]; then
+          base="${GITHUB_REF_NAME#v}"
+          base="${base%%-*}"
+          if [ "${base}" != "${ver}" ]; then
             echo "::error::Tag ${GITHUB_REF_NAME} tidak sama dengan version.go (v${ver})"
             exit 1
           fi
 
+      # Pada PR, test sudah dijalankan oleh ci.yml (Linux dan Windows).
       - name: Test
+        if: github.event_name != 'pull_request'
         run: go test -count=1 ./...
 
-      - name: Build windows/amd64 dan linux/amd64
+      - name: Build
         shell: bash
         env:
           CGO_ENABLED: "0"
         run: |
           mkdir dist
           GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/mcp-file-manager-go-windows-amd64.exe .
-          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/mcp-file-manager-go-linux-amd64 .
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/mcp-file-manager-go-linux-amd64 .
+          fi
           (cd dist && sha256sum * > SHA256SUMS.txt)
 
-      - name: Simpan artifact (build manual dev)
+      - name: Simpan artifact (PR atau manual)
         if: github.ref_type != 'tag'
         uses: actions/upload-artifact@v4
         with:
-          name: mcp-file-manager-go-dev-${{ github.run_number }}
+          name: mcp-file-manager-go-uji-${{ github.run_number }}-${{ github.sha }}
           path: dist/*
           retention-days: 7
           if-no-files-found: error
@@ -67,3 +78,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
+          prerelease: ${{ contains(github.ref_name, '-') }}

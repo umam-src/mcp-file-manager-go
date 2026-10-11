@@ -10,7 +10,7 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 ### Added
 - `claude_desktop_config.json.example` dan `docs/pemasangan.md` (panduan pasang di Claude Desktop).
 - CI (`.github/workflows/ci.yml`): `gofmt`, `go vet`, dan `go test` di Linux dan Windows; jalan hanya saat kode Go, modul, `CHANGELOG.md`, atau workflow berubah, membatalkan run lama, dan memakai cache.
-- Workflow rilis (`.github/workflows/release.yml`): pada tag `v*` mencocokkan tag dengan `version.go`, menjalankan test, membangun `windows/amd64` dan `linux/amd64` (`-trimpath -ldflags "-s -w"`), lalu melampirkan biner dan `SHA256SUMS.txt` ke Release. Pada branch `dev` bisa dijalankan manual untuk build uji (artifact 7 hari, tanpa tag dan Release). Belum pernah dijalankan.
+- Workflow rilis (`.github/workflows/release.yml`): tag `vX.Y.Z` mencocokkan tag dengan `version.go`, menjalankan test, membangun `windows/amd64` dan `linux/amd64` (`-trimpath -ldflags "-s -w"`), lalu melampirkan biner dan `SHA256SUMS.txt` ke Release; tag `vX.Y.Z-rc.N` menghasilkan pre-release. Pull request dan build manual (Run workflow) di branch mana pun hanya menghasilkan artifact 7 hari (Windows saja), tanpa tag dan Release. Belum pernah dijalankan.
 - `.gitignore` (menutup `.env`, `*.exe`, `dist/`).
 
 ## [0.2.6] - 2026-10-11
