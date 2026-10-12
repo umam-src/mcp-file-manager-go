@@ -36,18 +36,35 @@ Keputusan "Adopsi tool Desktop Commander" di `Keputusan.md`; kontrak identik den
 ## 0.3.0 — Siap dipasang dan dirilis
 - [x] `README.md`, `docs/alat.md` (daftar tool dan konfigurasi), `CONTRIBUTING.md`, `LICENSE` (dikerjakan bersama 0.1.0).
 - [x] Contoh `claude_desktop_config.json` untuk `.exe` dan panduan pemasangan (`docs/pemasangan.md`).
-- [ ] CI Go: `go vet` dan `go test` di Windows dan Linux, hemat menit (`paths`, `concurrency`, cache). Ditulis di `.github/workflows/ci.yml`; menunggu dijalankan.
-- [ ] Build rilis `windows/amd64` dan `linux/amd64`. Ditulis di `.github/workflows/release.yml`; cross-build lokal berhasil, menunggu tag.
-- [ ] Diuji di aplikasi Claude Desktop sungguhan.
+- [x] CI Go: `go vet` dan `go test` di Windows dan Linux, hemat menit (`paths`, `concurrency`, cache); hijau di GitHub.
+- [x] Build rilis `windows/amd64` dan `linux/amd64` (`.github/workflows/release.yml`); dicoba lewat tag `v0.2.6-rc.1`.
+- [x] Diuji di aplikasi Claude Desktop sungguhan (11 tool, 2026-10-11).
+- [x] `delete_dir` dry-run dan beberapa folder di `MCP_FILE_BASE` (semula 0.4.0) ikut dirilis di 0.3.0 (keputusan 2026-10-12).
 
 ## 0.4.0 — Fitur lanjutan (mengikuti TODO Python)
 
 Butir di bawah berasal dari bagian "Masih terbuka" di `TODO.md` versi Python. Kontrak harus sama dengan Python; bila Python mengerjakannya lebih dulu, Go menyusul dengan kontrak yang sama.
 
 - [ ] `list_directory`: parameter opsional `exclude` dan `max_entries`.
-- [x] `delete_dir`: dry-run/preview sebelum hapus rekursif (kode dan test selesai 2026-10-11, belum dirilis).
+- [x] `delete_dir`: dry-run/preview sebelum hapus rekursif (dirilis di 0.3.0).
 - [ ] Tool `search_files` (cari teks di banyak file) dan `get_file_info` (ukuran, waktu ubah).
-- [x] `MCP_FILE_BASE` boleh berisi beberapa folder (dipisah `;` di Windows, `:` di Linux); kode, test (`multi_base_test.go`), dan docs selesai 2026-10-11, belum dirilis; uji folder jarak jauh (UNC/CIFS/NFS) belum dilakukan. Satu nilai berjalan seperti sekarang; tool dan kontrak tidak berubah. Folder jarak jauh (UNC `\\server\share`, mount CIFS/NFS) boleh sebagai path yang dipasang sistem operasi; server tidak mengimplementasi protokol jaringan. Lihat keputusan 2026-10-10 di `Keputusan.md`. Paritas: Python menyusul dengan perilaku yang sama.
+- [x] `MCP_FILE_BASE` boleh berisi beberapa folder (dipisah `;` di Windows, `:` di Linux); dirilis di 0.3.0; uji folder jarak jauh (UNC/CIFS/NFS) belum dilakukan. Satu nilai berjalan seperti sekarang; tool dan kontrak tidak berubah. Folder jarak jauh (UNC `\\server\share`, mount CIFS/NFS) boleh sebagai path yang dipasang sistem operasi; server tidak mengimplementasi protokol jaringan. Lihat keputusan 2026-10-10 di `Keputusan.md`. Paritas: Python menyusul dengan perilaku yang sama.
+
+## 0.5.0 — Config terpusat (usulan)
+
+Keputusan 2026-10-12 di `Keputusan.md`. Tanpa tool atau parameter baru.
+
+- [ ] `MCP_FILE_CONFIG` menunjuk ke satu file JSON di luar semua folder dasar; env `MCP_FILE_BASE` tetap sebagai cadangan.
+- [ ] Muat ulang tanpa restart (waktu ubah file diperiksa tiap panggilan); file rusak: pakai config valid terakhir dan tulis peringatan ke stderr.
+- [ ] Mode `rw` atau `ro` per folder dasar dan batas hasil di file yang sama.
+- [ ] Config di folder proyek hanya boleh mempersempit, tidak melebarkan.
+
+## 0.6.0 — Varian sandbox dengan tool `run` bebas (usulan, isu G-11)
+
+Bergantung pada 0.5.0 dan CI/rilis 0.3.0 hijau. Rancangan di `Keputusan.md` 2026-10-12.
+
+- [ ] Varian `mcp-file-manager-sandbox` lewat build tag `sandbox` (varian normal tidak memuat kode eksekusi). Tool `run` (`program`, `args`, `cwd`, `timeout`) bebas dan tanpa batas `BASE_DIR`, hanya untuk mesin terisolasi. Pagar: `timeout` berbatas atas, batas keluaran, log audit, env bersih, dan server menolak jalan tanpa `MCP_SANDBOX=ya`.
+- [ ] Test kasus gagal (timeout, keluaran besar, tanpa `MCP_SANDBOX`, program tidak ada), uji stdio di container nyata, ukur `tools/list` kedua varian, `docs/alat.md` memuat risiko dan syarat isolasi (Docker, VM, atau Windows Sandbox; tanpa `.ssh` dan token host).
 
 ## Di luar cakupan
 

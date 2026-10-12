@@ -7,12 +7,14 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-12
+
 ### Added
-- `MCP_FILE_BASE` boleh berisi beberapa folder (dipisah `;` di Windows, `:` di Linux). Path relatif dihitung dari folder pertama yang tersedia; path absolut di salah satu folder diterima; symlink dan junction diperiksa terhadap semua folder. Folder tak tersedia dilewati dengan peringatan selama masih ada satu yang valid; folder bertumpang tindih ditolak saat mulai; `delete_dir` tidak menghapus folder dasar mana pun. Satu folder berjalan seperti sebelumnya; `tools/list` tetap 5.116 karakter, `instructions` hanya bertambah bila ada lebih dari satu folder (roadmap 0.4.0, belum diberi nomor versi).
-- `delete_dir`: parameter opsional `dry_run`; pratinjau hapus rekursif tanpa menghapus (`files`, `dirs`, `bytes`, `truncated`; tidak rekursif: `empty`, `would_delete`). `tools/list` 5.067 menjadi 5.116 karakter. Belum diberi nomor versi (G-7, roadmap 0.4.0).
+- `MCP_FILE_BASE` boleh berisi beberapa folder (dipisah `;` di Windows, `:` di Linux). Path relatif dihitung dari folder pertama yang tersedia; path absolut di salah satu folder diterima; symlink dan junction diperiksa terhadap semua folder. Folder tak tersedia dilewati dengan peringatan selama masih ada satu yang valid; folder bertumpang tindih ditolak saat mulai; `delete_dir` tidak menghapus folder dasar mana pun. Satu folder berjalan seperti sebelumnya; `tools/list` tetap 5.116 karakter, `instructions` hanya bertambah bila ada lebih dari satu folder. Folder jarak jauh (UNC, CIFS, NFS) belum diuji.
+- `delete_dir`: parameter opsional `dry_run`; pratinjau hapus rekursif tanpa menghapus (`files`, `dirs`, `bytes`, `truncated`; tidak rekursif: `empty`, `would_delete`). `tools/list` 5.067 menjadi 5.116 karakter. Isu G-7.
 - `claude_desktop_config.json.example` dan `docs/pemasangan.md` (panduan pasang di Claude Desktop).
 - CI (`.github/workflows/ci.yml`): `gofmt`, `go vet`, dan `go test` di Linux dan Windows; jalan hanya saat kode Go, modul, `CHANGELOG.md`, atau workflow berubah, membatalkan run lama, dan memakai cache.
-- Workflow rilis (`.github/workflows/release.yml`): tag `vX.Y.Z` mencocokkan tag dengan `version.go`, menjalankan test, membangun `windows/amd64` dan `linux/amd64` (`-trimpath -ldflags "-s -w"`), lalu melampirkan biner dan `SHA256SUMS.txt` ke Release; tag `vX.Y.Z-rc.N` menghasilkan pre-release. Pull request dan build manual (Run workflow) di branch mana pun hanya menghasilkan artifact 7 hari (Windows saja), tanpa tag dan Release. Belum pernah dijalankan.
+- Workflow rilis (`.github/workflows/release.yml`): tag `vX.Y.Z` mencocokkan tag dengan `version.go`, menjalankan test, membangun `windows/amd64` dan `linux/amd64` (`-trimpath -ldflags "-s -w"`), lalu melampirkan biner dan `SHA256SUMS.txt` ke Release; tag `vX.Y.Z-rc.N` menghasilkan pre-release. Pull request dan build manual (Run workflow) di branch mana pun hanya menghasilkan artifact 7 hari (Windows saja), tanpa tag dan Release. Sudah dicoba lewat tag `v0.2.6-rc.1` (pre-release).
 - `.gitignore` (menutup `.env`, `*.exe`, `dist/`).
 
 ## [0.2.7] - 2026-10-11
