@@ -20,6 +20,12 @@ type visitFunc func(rel string, isDir bool, de fs.DirEntry, full string) bool
 // dan symlink ke folder dicantumkan tetapi tidak dimasuki; folder yang tidak
 // terbaca dilewati. Mengembalikan false bila visit meminta berhenti.
 func walkTree(dir, rel string, depth, maxDepth int, visit visitFunc) bool {
+	return walkTreeSkip(dir, rel, depth, maxDepth, nil, visit)
+}
+
+// walkTreeSkip seperti walkTree; entri yang namanya dikenali skip dilewati
+// sepenuhnya (tidak dicantumkan dan tidak dimasuki).
+func walkTreeSkip(dir, rel string, depth, maxDepth int, skip func(string) bool, visit visitFunc) bool {
 	des, err := os.ReadDir(dir)
 	if err != nil {
 		return true
@@ -27,6 +33,9 @@ func walkTree(dir, rel string, depth, maxDepth int, visit visitFunc) bool {
 	sort.Slice(des, func(i, j int) bool { return nameLess(des[i].Name(), des[j].Name()) })
 	for _, de := range des {
 		name := de.Name()
+		if skip != nil && skip(name) {
+			continue
+		}
 		relName := name
 		if rel != "" {
 			relName = rel + "/" + name
@@ -40,7 +49,7 @@ func walkTree(dir, rel string, depth, maxDepth int, visit visitFunc) bool {
 			return false
 		}
 		if de.IsDir() && depth < maxDepth && !excluded(name) {
-			if !walkTree(child, relName, depth+1, maxDepth, visit) {
+			if !walkTreeSkip(child, relName, depth+1, maxDepth, skip, visit) {
 				return false
 			}
 		}
@@ -67,8 +76,32 @@ func statDir(full, p string) *result {
 }
 
 type listInput struct {
-	Path  *string `json:"path,omitempty"`
-	Depth *int    `json:"depth,omitempty"`
+	Path       *string  `json:"path,omitempty"`
+	Depth      *int     `json:"depth,omitempty"`
+	Exclude    []string `json:"exclude,omitempty"`
+	MaxEntries *int     `json:"max_entries,omitempty"`
+}
+
+// excludeFunc membuat penyaring nama dari daftar exclude: nama persis, atau
+// pola dengan '*' / '?'. Huruf besar/kecil diabaikan di Windows.
+func excludeFunc(patterns []string) func(string) bool {
+	if len(patterns) == 0 {
+		return nil
+	}
+	return func(name string) bool {
+		n := foldName(name)
+		for _, p := range patterns {
+			p = foldName(p)
+			if strings.ContainsAny(p, "*?") {
+				if wild(p, n) {
+					return true
+				}
+			} else if p == n {
+				return true
+			}
+		}
+		return false
+	}
 }
 
 func (m *manager) listDirectory(in listInput) result {
@@ -83,6 +116,13 @@ func (m *manager) listDirectory(in listInput) result {
 	if depth < 1 {
 		return fail("depth harus lebih besar dari 0")
 	}
+	limit := m.cfg.maxEntries
+	if in.MaxEntries != nil {
+		if *in.MaxEntries < 1 {
+			return fail("max_entries harus lebih besar dari 0")
+		}
+		limit = min(*in.MaxEntries, limit)
+	}
 	full, err := m.cfg.safe(p)
 	if err != nil {
 		return failErr(err)
@@ -93,8 +133,8 @@ func (m *manager) listDirectory(in listInput) result {
 
 	entries := make([]string, 0)
 	truncated := false
-	walkTree(full, "", 1, depth, func(rel string, isDir bool, _ fs.DirEntry, _ string) bool {
-		if len(entries) >= m.cfg.maxEntries {
+	walkTreeSkip(full, "", 1, depth, excludeFunc(in.Exclude), func(rel string, isDir bool, _ fs.DirEntry, _ string) bool {
+		if len(entries) >= limit {
 			truncated = true
 			return false
 		}

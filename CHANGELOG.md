@@ -7,6 +7,10 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-12
+
+### Added
+- `list_directory`: parameter opsional `exclude` (daftar nama yang dilewati sepenuhnya; nama persis, atau pola dengan `*` dan `?`; huruf besar/kecil diabaikan di Windows) dan `max_entries` (menurunkan batas 1000 entri; nilai di atas batas server dipotong ke batas server, nilai kurang dari 1 ditolak). Tanpa kedua parameter hasil tidak berubah. `tools/list` 5.150 menjadi 5.308 karakter (lihat `Keputusan.md` proyek, 2026-10-12). Isu G-6.
 ## [0.3.0] - 2026-10-12
 
 ### Added

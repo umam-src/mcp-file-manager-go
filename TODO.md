@@ -18,7 +18,7 @@ Milestone dan nomor versi ada di [ROADMAP.md](ROADMAP.md); file ini memecahnya m
 - [ ] Commit ke Git dan pastikan CI hijau.
 
 ### 0.4.0 — Fitur lanjutan
-- [ ] `list_directory`: `exclude` dan `max_entries` opsional.
+- [x] `list_directory`: `exclude` dan `max_entries` opsional (0.4.0; Python menyusul).
 - [x] `delete_dir`: dry-run/preview (belum dirilis; lihat `[Unreleased]` di CHANGELOG).
 - [x] Beberapa folder di `MCP_FILE_BASE` (selesai 2026-10-11 di `[Unreleased]`, belum dirilis; `tools/list` tetap 5.116). Syarat:
   - Setiap path lewat `safe()` dan harus berada di salah satu folder; symlink dan junction diperiksa per folder (`resolveLinks`).
@@ -37,3 +37,6 @@ Milestone dan nomor versi ada di [ROADMAP.md](ROADMAP.md); file ini memecahnya m
 - [x] 0.1.1: hemat token tahap 1 (`outputSchema` dibuang, deskripsi tool dipangkas dan disamakan dengan Python): `tools/list` 6.341 menjadi 4.140 karakter.
 - [x] 0.2.6: hemat token tahap 2 (union `null` dibuang dari 10 parameter opsional, argumen `null` tetap diterima): `tools/list` 5.476 menjadi 5.386 karakter.
 - [x] 0.2.7: hemat token tahap 3: `additionalProperties:false` tidak lagi dikirim di `tools/list` (`tools/list` 5.386 menjadi 5.067 karakter); penolakan parameter yang tidak dikenal tetap berjalan di server (`unknown_args_test.go`). `title` di annotations sengaja dipertahankan (hemat kecil, keterbacaan permintaan persetujuan lebih penting); `destructiveHint` tetap eksplisit. Python belum disamakan.
+- [ ] Daftar path terlindungi (deny) di config: tolak tulis, hapus, dan pindah ke file yang bisa melebarkan akses atau menjalankan kode, mis. claude_desktop_config.json, kode dan .venv/site-packages server, .git/hooks, folder Startup, dan .exe server sendiri. Usulan untuk 0.5.0 (config terpusat); Python menyusul. Belum disetujui.
+- [ ] Mode o per folder dasar (folder rujukan seperti profil pengguna atau SMB hanya dibaca), di file config yang sama. Usulan untuk 0.5.0. Belum disetujui.
+- [ ] Tulis folder jaringan di config dengan garis miring (//server/share) agar JSON tidak rusak; contohnya dimasukkan ke docs/pemasangan.md, termasuk catatan bahwa folder yang tidak terjangkau saat mulai dilewati dan baru aktif setelah restart.

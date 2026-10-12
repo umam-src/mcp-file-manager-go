@@ -162,8 +162,8 @@ func newServer(cfg *config) *mcp.Server {
 	// Nama, urutan, dan teksnya disamakan dengan versi Python.
 	addTool(srv, &mcp.Tool{
 		Name: "list_directory",
-		Description: "Daftar isi folder sampai kedalaman depth, diberi awalan [DIR] atau [FILE]. " +
-			"Folder berat (.git, .venv, node_modules, dll.) tidak dimasuki dan hasil dibatasi 1000 entri ('truncated').",
+		Description: "Daftar isi folder sampai kedalaman depth, diberi awalan [DIR] atau [FILE]; exclude melewati nama (boleh * dan ?). " +
+			"Folder berat (.git, .venv, node_modules, dll.) tidak dimasuki; hasil dibatasi 1000 entri ('truncated'), dapat diturunkan lewat max_entries.",
 		Annotations: annotations("Daftar folder", true, false, true),
 	}, m.listDirectory)
 
