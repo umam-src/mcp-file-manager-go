@@ -7,6 +7,16 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-13
+
+### Added
+- Config terpusat: berkas JSON lewat `MCP_FILE_CONFIG` (atau berkas bawaan di folder config pengguna bila ada) berisi folder dasar dengan mode `rw`/`ro` (bawaan `ro`) dan batas `max_write_bytes`, `max_read_chars`, `max_entries`. Berkas harus di luar semua folder dasar.
+- Muat ulang tanpa restart; berkas rusak: config valid terakhir tetap dipakai dan peringatan ke stderr.
+- Folder `ro` menolak tulis, hapus, dan pindah.
+
+### Changed
+- `MCP_FILE_BASE` kini cadangan bila berkas config tidak ada atau tidak valid (semua `rw`); tanpa keduanya server tidak jalan. Bagi yang hanya memakai `MCP_FILE_BASE`, perilaku tidak berubah.
+
 ## [0.4.0] - 2026-10-12
 
 ### Added

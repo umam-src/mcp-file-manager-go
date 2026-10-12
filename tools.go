@@ -156,7 +156,7 @@ func newServer(cfg *config) *mcp.Server {
 		&mcp.Implementation{Name: "mcp-file-manager", Version: version},
 		&mcp.ServerOptions{Instructions: instructions(cfg.allBases())},
 	)
-	srv.AddReceivingMiddleware(dropNullArgs, slimListTools)
+	srv.AddReceivingMiddleware(dropNullArgs, slimListTools, cfg.guard)
 
 	// Deskripsi tool: maksimal dua kalimat (aturan "Desain MCP hemat token").
 	// Nama, urutan, dan teksnya disamakan dengan versi Python.

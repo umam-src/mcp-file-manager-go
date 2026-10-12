@@ -1,10 +1,15 @@
 // Command mcp-file-manager-go adalah MCP server (transport stdio) untuk
-// mengelola file lokal. Semua akses dibatasi ke folder MCP_FILE_BASE.
+// mengelola file lokal. Semua akses dibatasi ke folder dasar yang diatur lewat
+// berkas config JSON atau MCP_FILE_BASE.
 //
 // Variabel lingkungan:
 //
-//	MCP_FILE_BASE            folder yang boleh diakses (wajib); beberapa folder dipisah
-//	                         ';' (Windows) atau ':' (Linux), path relatif dari folder pertama
+//	MCP_FILE_CONFIG          berkas config JSON (folder dasar dengan mode rw/ro dan batas hasil),
+//	                         dimuat ulang tanpa restart; harus di luar semua folder dasar. Bila
+//	                         kosong, dipakai berkas bawaan di folder config pengguna (jika ada)
+//	MCP_FILE_BASE            cadangan bila config tidak ada atau tidak valid: folder yang boleh
+//	                         diakses (semua rw); beberapa folder dipisah ';' (Windows) atau ':'
+//	                         (Linux), path relatif dari folder pertama
 //	MCP_FILE_MAX_WRITE_BYTES batas ukuran tulis per operasi (bawaan 5 MiB)
 //	MCP_FILE_LOG_LEVEL       level log ke stderr: DEBUG, INFO, WARN, ERROR (bawaan INFO)
 //
@@ -39,7 +44,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	slog.Info("mcp-file-manager mulai", "versi", version, "base_dir", cfg.baseDir, "folder_lain", cfg.otherDirs)
+	slog.Info("mcp-file-manager mulai", "versi", version, "base_dir", cfg.baseDir, "folder_lain", cfg.otherDirs, "hanya_baca", cfg.roDirs, "config", cfg.path)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()

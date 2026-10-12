@@ -24,9 +24,31 @@ Annotations: `list_directory`, `read_file`, `read_multiple_files`, `get_file_inf
 
 | Variabel | Bawaan | Keterangan |
 |---|---|---|
-| `MCP_FILE_BASE` | tidak ada (wajib) | Folder yang boleh diakses; harus ada. Beberapa folder dipisah `;` (Windows) atau `:` (Linux): path relatif dihitung dari folder pertama yang tersedia, path absolut di salah satu folder diterima. Folder yang tidak ada atau bukan folder dilewati dengan peringatan di stderr selama masih ada satu yang valid; folder yang bertumpang tindih (sama, atau satu di dalam yang lain) ditolak saat mulai. Folder jarak jauh (UNC `\\server\share`, mount CIFS/NFS) boleh sebagai path yang dipasang sistem operasi. `move_file` antar-folder memakai rename sistem operasi dan gagal dengan pesan galat bila berbeda volume. Bila kosong, server berhenti dengan pesan yang jelas. |
+| `MCP_FILE_CONFIG` | berkas bawaan di folder config pengguna (`%APPDATA%\mcp-file-manager\config.json`; Linux `$XDG_CONFIG_HOME` atau `~/.config`), dipakai hanya bila ada | Path berkas config JSON (lihat "Berkas config"). Dimuat ulang tanpa restart. Tanpa variabel ini dan tanpa berkas bawaan, server memakai `MCP_FILE_BASE`. |
+| `MCP_FILE_BASE` | tidak ada (wajib bila tidak ada config) | Cadangan bila berkas config tidak ada atau tidak valid saat mulai; semua folder bermode `rw`. Folder yang boleh diakses; harus ada. Beberapa folder dipisah `;` (Windows) atau `:` (Linux): path relatif dihitung dari folder pertama yang tersedia, path absolut di salah satu folder diterima. Folder yang tidak ada atau bukan folder dilewati dengan peringatan di stderr selama masih ada satu yang valid; folder yang bertumpang tindih (sama, atau satu di dalam yang lain) ditolak saat mulai. Folder jarak jauh (UNC `\\server\share`, mount CIFS/NFS) boleh sebagai path yang dipasang sistem operasi. `move_file` antar-folder memakai rename sistem operasi dan gagal dengan pesan galat bila berbeda volume. Bila kosong, server berhenti dengan pesan yang jelas. |
 | `MCP_FILE_MAX_WRITE_BYTES` | 5 MiB | Batas ukuran tulis. Nilai tidak valid (bukan angka, nol, negatif) memakai bawaan dan dicatat sebagai peringatan. |
 | `MCP_FILE_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, atau `error`; log ke stderr. Nilai tidak valid memakai `info`. |
+
+### Berkas config
+
+Berkas JSON di luar semua folder dasar (ditolak bila berada di dalamnya, agar server tidak bisa mengubah pengaturannya sendiri). Contoh:
+
+```json
+{
+  "bases": [
+    {"path": "C:/Proyek", "mode": "rw"},
+    {"path": "//server/share", "mode": "ro"}
+  ],
+  "max_write_bytes": 5242880,
+  "max_read_chars": 100000,
+  "max_entries": 1000
+}
+```
+
+- `mode`: `rw` atau `ro`; bawaan `ro` (aman). Tulis, hapus, dan pindah ke folder `ro` ditolak dengan pesan galat.
+- Batas yang dihilangkan memakai bawaan. Gunakan garis miring (`//server/share`) agar JSON tidak rusak oleh `\`.
+- Dimuat ulang tanpa restart: waktu ubah berkas diperiksa tiap panggilan. Berkas rusak atau tidak valid: config valid terakhir tetap dipakai dan peringatan ditulis ke stderr.
+- Bila berkas tidak bisa dipakai saat mulai, `MCP_FILE_BASE` menjadi cadangan (semua `rw`) dan berkas tetap dipantau.
 
 Tidak ada dukungan berkas `.env`; isi variabel lewat pengaturan client MCP.
 

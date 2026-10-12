@@ -54,16 +54,16 @@ Butir di bawah berasal dari bagian "Masih terbuka" di `TODO.md` versi Python. Ko
 
 Keputusan 2026-10-12 di `Keputusan.md`. Tanpa tool atau parameter baru.
 
-- [ ] `MCP_FILE_CONFIG` menunjuk ke satu file JSON di luar semua folder dasar; env `MCP_FILE_BASE` tetap sebagai cadangan.
-- [ ] Muat ulang tanpa restart (waktu ubah file diperiksa tiap panggilan); file rusak: pakai config valid terakhir dan tulis peringatan ke stderr.
-- [ ] Mode `rw` atau `ro` per folder dasar dan batas hasil di file yang sama.
-- [ ] Config di folder proyek hanya boleh mempersempit, tidak melebarkan.
+- [x] `MCP_FILE_CONFIG` menunjuk ke satu file JSON di luar semua folder dasar; env `MCP_FILE_BASE` tetap sebagai cadangan.
+- [x] Muat ulang tanpa restart (waktu ubah file diperiksa tiap panggilan); file rusak: pakai config valid terakhir dan tulis peringatan ke stderr.
+- [x] Mode `rw` atau `ro` per folder dasar dan batas hasil di file yang sama.
+- [ ] Config di folder proyek hanya boleh mempersempit, tidak melebarkan (ditunda: belum dirancang, tidak memblokir 0.5.0).
 
-## 0.6.0 — Varian sandbox dengan tool `run` bebas (usulan, isu G-11)
+## 0.6.0 — Varian `exec` dengan tool proses bebas (usulan, isu G-11)
 
 Bergantung pada 0.5.0 dan CI/rilis 0.3.0 hijau. Rancangan di `Keputusan.md` 2026-10-12.
 
-- [ ] Varian `mcp-file-manager-sandbox` lewat build tag `sandbox` (varian normal tidak memuat kode eksekusi). Tool `run` (`program`, `args`, `cwd`, `timeout`) bebas dan tanpa batas `BASE_DIR`, hanya untuk mesin terisolasi. Pagar: `timeout` berbatas atas, batas keluaran, log audit, env bersih, dan server menolak jalan tanpa `MCP_SANDBOX=ya`.
+- [ ] Varian `mcp-file-manager-exec` (nama diputuskan 2026-10-12, lihat [[Keputusan]]) lewat build tag `exec` (varian normal tidak memuat kode eksekusi). Tool `run` (`program`, `args`, `cwd`, `timeout`) bebas dan tanpa batas `BASE_DIR`, hanya untuk mesin terisolasi. Pagar: `timeout` berbatas atas, batas keluaran, log audit, env bersih, dan server menolak jalan tanpa `MCP_SANDBOX=ya`.
 - [ ] Test kasus gagal (timeout, keluaran besar, tanpa `MCP_SANDBOX`, program tidak ada), uji stdio di container nyata, ukur `tools/list` kedua varian, `docs/alat.md` memuat risiko dan syarat isolasi (Docker, VM, atau Windows Sandbox; tanpa `.ssh` dan token host).
 
 Pembaruan 2026-10-12 (lihat `Keputusan.md`): tool `run` tunggal diganti tool proses gaya Desktop Commander.

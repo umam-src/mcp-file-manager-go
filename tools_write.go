@@ -40,7 +40,7 @@ func (m *manager) writeFile(in writeInput) result {
 	if mode != "rewrite" && mode != "append" {
 		return fail("mode harus 'rewrite' atau 'append'")
 	}
-	full, err := m.cfg.safe(in.Path)
+	full, err := m.cfg.safeW(in.Path)
 	if err != nil {
 		return failErr(err)
 	}
@@ -100,7 +100,7 @@ func (m *manager) editBlock(in editInput) result {
 	if expected < 1 {
 		return fail("expected_replacements harus lebih besar dari 0")
 	}
-	full, err := m.cfg.safe(in.FilePath)
+	full, err := m.cfg.safeW(in.FilePath)
 	if err != nil {
 		return failErr(err)
 	}
@@ -151,7 +151,7 @@ type pathInput struct {
 }
 
 func (m *manager) deleteFile(in pathInput) result {
-	full, isLink, err := m.cfg.safeLeaf(in.Path)
+	full, isLink, err := m.cfg.safeLeafW(in.Path)
 	if err != nil {
 		return failErr(err)
 	}
@@ -237,6 +237,11 @@ func (m *manager) deleteDir(in deleteDirInput) result {
 	if err != nil {
 		return failErr(err)
 	}
+	if !in.DryRun {
+		if err := m.cfg.checkWritable(full); err != nil {
+			return failErr(err)
+		}
+	}
 	if m.cfg.isBase(full) {
 		return fail("tidak boleh menghapus BASE_DIR itu sendiri")
 	}
@@ -308,11 +313,11 @@ type moveInput struct {
 }
 
 func (m *manager) moveFile(in moveInput) result {
-	src, srcLink, err := m.cfg.safeLeaf(in.Source)
+	src, srcLink, err := m.cfg.safeLeafW(in.Source)
 	if err != nil {
 		return failErr(err)
 	}
-	dst, dstLink, err := m.cfg.safeLeaf(in.Destination)
+	dst, dstLink, err := m.cfg.safeLeafW(in.Destination)
 	if err != nil {
 		return failErr(err)
 	}
@@ -396,7 +401,7 @@ func (m *manager) moveFile(in moveInput) result {
 }
 
 func (m *manager) createDirectory(in pathInput) result {
-	full, err := m.cfg.safe(in.Path)
+	full, err := m.cfg.safeW(in.Path)
 	if err != nil {
 		return failErr(err)
 	}
