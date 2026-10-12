@@ -66,6 +66,12 @@ Bergantung pada 0.5.0 dan CI/rilis 0.3.0 hijau. Rancangan di `Keputusan.md` 2026
 - [ ] Varian `mcp-file-manager-sandbox` lewat build tag `sandbox` (varian normal tidak memuat kode eksekusi). Tool `run` (`program`, `args`, `cwd`, `timeout`) bebas dan tanpa batas `BASE_DIR`, hanya untuk mesin terisolasi. Pagar: `timeout` berbatas atas, batas keluaran, log audit, env bersih, dan server menolak jalan tanpa `MCP_SANDBOX=ya`.
 - [ ] Test kasus gagal (timeout, keluaran besar, tanpa `MCP_SANDBOX`, program tidak ada), uji stdio di container nyata, ukur `tools/list` kedua varian, `docs/alat.md` memuat risiko dan syarat isolasi (Docker, VM, atau Windows Sandbox; tanpa `.ssh` dan token host).
 
+Pembaruan 2026-10-12 (lihat `Keputusan.md`): tool `run` tunggal diganti tool proses gaya Desktop Commander.
+
+- [ ] Tahap A: `start_process`, `read_process_output`, `kill_process` (tanpa interaktif); keluaran bertahap dengan `offset`/`length`, penampung berbatas, status `running`/`exited` dengan kode keluar.
+- [ ] Kode per OS lewat build tag (`proc_windows.go`, `proc_unix.go`): pohon proses ikut mati saat batas waktu, `kill_process`, dan server berhenti (Windows: Job Object atau `taskkill /T /F`; Linux: grup proses); keluaran dipaksa UTF-8; shell per OS dicatat di `docs/alat.md`; test di CI Windows dan Linux.
+- [ ] Tahap B: `interact_with_process` (ConPTY di Windows, PTY di Unix) setelah tahap A stabil.
+
 ## Di luar cakupan
 
 - Mengubah atau menghapus versi Python.
