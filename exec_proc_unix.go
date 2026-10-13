@@ -7,6 +7,11 @@ import (
 	"syscall"
 )
 
+// guardChildren tidak melakukan apa pun di Unix: tidak ada padanan Job Object
+// yang andal (Pdeathsig bergantung pada thread). Di container, mematikan
+// container menghentikan semua proses; lihat docs/alat.md.
+func guardChildren() {}
+
 // setupProc menjadikan proses pemimpin grup baru agar seluruh pohonnya bisa dimatikan.
 func setupProc(cmd *exec.Cmd) {
 	if cmd.SysProcAttr == nil {

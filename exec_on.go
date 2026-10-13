@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -55,7 +56,9 @@ func execCheck(getenv func(string) string) error {
 // (tanpa token atau rahasia host).
 var envAllow = []string{"PATH", "PATHEXT", "SYSTEMROOT", "SYSTEMDRIVE", "COMSPEC", "WINDIR", "TEMP", "TMP",
 	"HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "PROGRAMFILES", "PROGRAMFILES(X86)", "PROGRAMDATA",
-	"LANG", "LC_ALL", "TERM", "TZ"}
+	"USERNAME", "USERDOMAIN", "COMPUTERNAME", "HOMEDRIVE", "HOMEPATH", "ALLUSERSPROFILE", "PUBLIC", "OS",
+	"PROCESSOR_ARCHITECTURE", "NUMBER_OF_PROCESSORS", "PROGRAMW6432", "COMMONPROGRAMFILES", "COMMONPROGRAMFILES(X86)", "COMMONPROGRAMW6432",
+	"USER", "LOGNAME", "LANG", "LC_ALL", "TERM", "TZ"}
 
 func cleanEnv() []string {
 	out := make([]string, 0, len(envAllow)+1)
@@ -291,7 +294,12 @@ func (m *execMgr) start(in startInput) result {
 	m.evictLocked()
 	m.mu.Unlock()
 
-	slog.Info("exec mulai", "pid", p.pid, "program", in.Program, "args", in.Args, "shell", in.Shell, "cwd", cwd, "timeout", timeout)
+	// Perintah dan argumen tidak dicatat: bisa memuat sandi atau token (mis. PGPASSWORD=... atau URL berkredensial).
+	name := "(shell)"
+	if !in.Shell {
+		name = filepath.Base(in.Program)
+	}
+	slog.Info("exec mulai", "pid", p.pid, "program", name, "argumen", len(in.Args), "shell", in.Shell, "cwd", cwd, "timeout", timeout)
 	go p.wait(timeout)
 	wait := time.Duration(clamp(in.WaitMs, defWait, maxWait)) * time.Millisecond
 	if in.Interactive {
@@ -306,6 +314,10 @@ func (m *execMgr) start(in startInput) result {
 func (p *proc) wait(timeout time.Duration) {
 	timer := time.AfterFunc(timeout, func() {
 		p.mu.Lock()
+		if p.exited {
+			p.mu.Unlock()
+			return // sudah selesai: jangan tandai timeout atau mematikan pid yang mungkin dipakai proses lain
+		}
 		p.timedOut = true
 		p.mu.Unlock()
 		killTree(p.cmd)
@@ -315,9 +327,10 @@ func (p *proc) wait(timeout time.Duration) {
 	p.mu.Lock()
 	p.exited = true
 	p.code = p.cmd.ProcessState.ExitCode()
+	code, to := p.code, p.timedOut
 	p.mu.Unlock()
 	close(p.done)
-	slog.Info("exec selesai", "pid", p.pid, "kode", p.code, "timeout", p.timedOut, "durasi", time.Since(p.started).Round(time.Millisecond))
+	slog.Info("exec selesai", "pid", p.pid, "kode", code, "timeout", to, "durasi", time.Since(p.started).Round(time.Millisecond))
 }
 
 // evictLocked membuang proses selesai tertua bila melebihi maxKept.
@@ -457,6 +470,7 @@ func execShutdown() {
 }
 
 func registerExec(srv *mcp.Server, cfg *config) {
+	guardChildren()
 	m := &execMgr{cfg: cfg, procs: map[int]*proc{}}
 	theExec = m
 	yes, no := true, false

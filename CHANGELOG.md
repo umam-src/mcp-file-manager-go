@@ -7,6 +7,18 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-14
+
+Perbaikan varian `exec`; biner normal tidak berubah.
+
+### Fixed
+- Windows: proses yang dijalankan `start_process` tidak lagi tertinggal bila server dimatikan paksa (mis. Claude Desktop ditutup). Sebelumnya `execShutdown` tidak sempat jalan dan proses terus hidup melewati `timeout_s`; kini server berada di Job Object `KILL_ON_JOB_CLOSE` sehingga Windows ikut mematikan semua proses turunan. Teruji: anak `ping` mati setelah server dimatikan paksa (sebelumnya hidup).
+- Batas waktu tidak lagi menandai `timed_out` atau mematikan proses yang sudah selesai (menutup balapan yang bisa mengenai pid yang dipakai ulang); `timed_out` di log dibaca dengan kunci.
+- Lingkungan proses menambah variabel sistem tak sensitif (`USERNAME`, `COMPUTERNAME`, `USERDOMAIN`, `HOMEDRIVE`, `HOMEPATH`, `ALLUSERSPROFILE`, `PUBLIC`, `OS`, `PROCESSOR_ARCHITECTURE`, `NUMBER_OF_PROCESSORS`, `PROGRAMW6432`, `COMMONPROGRAMFILES*`, `USER`, `LOGNAME`) agar alat pengembangan berjalan normal; token dan sandi tetap tidak diteruskan.
+
+### Security
+- Log tidak lagi memuat argumen atau baris perintah (hanya nama program, jumlah argumen, `cwd`, timeout): perintah bisa berisi sandi atau token, dan log stderr tersimpan di berkas log klien.
+
 ## [0.7.0] - 2026-10-13
 
 ### Added

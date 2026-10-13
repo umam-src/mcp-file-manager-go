@@ -288,3 +288,19 @@ func TestNonInteraktifStdinTertutup(t *testing.T) {
 		t.Fatalf("stdin tertutup harus langsung selesai: %v", r)
 	}
 }
+
+func TestEnvMeneruskanVariabelAman(t *testing.T) {
+	t.Setenv("USERNAME", "uji")
+	t.Setenv("PGPASSWORD", "rahasia")
+	var gotUser, gotSecret bool
+	for _, kv := range cleanEnv() {
+		gotUser = gotUser || kv == "USERNAME=uji"
+		gotSecret = gotSecret || strings.HasPrefix(kv, "PGPASSWORD=")
+	}
+	if !gotUser {
+		t.Error("USERNAME harus diteruskan")
+	}
+	if gotSecret {
+		t.Error("variabel rahasia tidak boleh diteruskan")
+	}
+}
