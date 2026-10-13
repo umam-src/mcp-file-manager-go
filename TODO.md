@@ -32,8 +32,8 @@ Milestone dan nomor versi ada di [ROADMAP.md](ROADMAP.md); file ini memecahnya m
 - [x] Push (`2a4d7c1`) dan CI hijau di Linux dan Windows (2026-10-13).
 - [x] Uji stdio varian `exec` di container Linux nyata (2026-10-13, Docker 29 di VM dev): shell, timeout, `kill_process`, tanpa shell, program tidak ada, tanpa `MCP_SANDBOX` lulus; pohon proses mati. Catatan: pakai `docker run --init` agar tidak ada zombie (sudah di `docs/alat.md`).
 - [x] Isolasi dan `cwd` diputuskan 2026-10-13 (meniru Desktop Commander: `cwd` bebas, isolasi di mesin: Docker atau Windows Sandbox sebagai pilihan terdokumentasi; config tambahan lewat config 0.5); lihat `Keputusan.md`.
-- [ ] Rilis 0.6.0 (bump `version.go` dan CHANGELOG satu commit) setelah butir di atas selesai.
-- [ ] Tahap B: `interact_with_process` (ConPTY di Windows, PTY di Unix) setelah tahap A stabil.
+- [x] Rilis 0.6.0 (bump `version.go` dan CHANGELOG satu commit; tahap A saja, 2026-10-13).
+- [ ] 0.7.0, tahap B: `interact_with_process` (ConPTY di Windows, PTY di Unix) setelah tahap A stabil.
 
 ### Saran optimasi (dikerjakan setelah disetujui)
 - [ ] Test junction hanya berjalan di Windows (junction dipakai sebagai cadangan symlink); pastikan symlink asli juga teruji di Linux lewat CI.

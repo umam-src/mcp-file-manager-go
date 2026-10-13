@@ -59,18 +59,18 @@ Keputusan 2026-10-12 di `Keputusan.md`. Tanpa tool atau parameter baru.
 - [x] Mode `rw` atau `ro` per folder dasar dan batas hasil di file yang sama.
 - [ ] Config di folder proyek hanya boleh mempersempit, tidak melebarkan (ditunda: belum dirancang, tidak memblokir 0.5.0).
 
-## 0.6.0 — Varian `exec` dengan tool proses bebas (usulan, isu G-11)
+## 0.6.0 — Varian `exec` dengan tool proses bebas (dirilis 2026-10-13, isu G-11)
 
 Bergantung pada 0.5.0 dan CI/rilis 0.3.0 hijau. Rancangan di `Keputusan.md` 2026-10-12.
 
-- [ ] Varian `mcp-file-manager-exec` (nama diputuskan 2026-10-12, lihat [[Keputusan]]) lewat build tag `exec` (varian normal tidak memuat kode eksekusi). Tool `run` (`program`, `args`, `cwd`, `timeout`) bebas dan tanpa batas `BASE_DIR`, hanya untuk mesin terisolasi. Pagar: `timeout` berbatas atas, batas keluaran, log audit, env bersih, dan server menolak jalan tanpa `MCP_SANDBOX=ya`.
-- [ ] (Sudah: test kasus gagal, `tools/list` diukur 5.308 normal dan 6.903 exec, `docs/alat.md`; sisa: uji stdio di container Linux nyata) Test kasus gagal (timeout, keluaran besar, tanpa `MCP_SANDBOX`, program tidak ada), uji stdio di container nyata, ukur `tools/list` kedua varian, `docs/alat.md` memuat risiko dan syarat isolasi (Docker, VM, atau Windows Sandbox; tanpa `.ssh` dan token host).
+- [x] Varian `mcp-file-manager-exec` (nama diputuskan 2026-10-12, lihat [[Keputusan]]) lewat build tag `exec` (varian normal tidak memuat kode eksekusi). Tool `run` (`program`, `args`, `cwd`, `timeout`) bebas dan tanpa batas `BASE_DIR`, hanya untuk mesin terisolasi. Pagar: `timeout` berbatas atas, batas keluaran, log audit, env bersih, dan server menolak jalan tanpa `MCP_SANDBOX=ya`.
+- [x] (Selesai: test kasus gagal, `tools/list` diukur 5.308 normal dan 6.903 exec, `docs/alat.md`, uji stdio di container Linux 2026-10-13) Test kasus gagal (timeout, keluaran besar, tanpa `MCP_SANDBOX`, program tidak ada), uji stdio di container nyata, ukur `tools/list` kedua varian, `docs/alat.md` memuat risiko dan syarat isolasi (Docker, VM, atau Windows Sandbox; tanpa `.ssh` dan token host).
 
 Pembaruan 2026-10-12 (lihat `Keputusan.md`): tool `run` tunggal diganti tool proses gaya Desktop Commander.
 
-- [x] (Selesai di kode 2026-10-13, commit lokal, belum dirilis) Tahap A: `start_process`, `read_process_output`, `kill_process` (tanpa interaktif); keluaran bertahap dengan `offset`/`length`, penampung berbatas, status `running`/`exited` dengan kode keluar.
-- [ ] (Kode ada di `exec_proc_windows.go` dan `exec_proc_unix.go`; Windows lulus lokal termasuk pohon proses lewat stdio, Linux baru lulus vet lintas-kompilasi: tunggu CI) Kode per OS lewat build tag (`proc_windows.go`, `proc_unix.go`): pohon proses ikut mati saat batas waktu, `kill_process`, dan server berhenti (Windows: Job Object atau `taskkill /T /F`; Linux: grup proses); keluaran dipaksa UTF-8; shell per OS dicatat di `docs/alat.md`; test di CI Windows dan Linux.
-- [ ] Tahap B: `interact_with_process` (ConPTY di Windows, PTY di Unix) setelah tahap A stabil.
+- [x] (Selesai dan dirilis 2026-10-13) Tahap A: `start_process`, `read_process_output`, `kill_process` (tanpa interaktif); keluaran bertahap dengan `offset`/`length`, penampung berbatas, status `running`/`exited` dengan kode keluar.
+- [x] (Kode di `exec_proc_windows.go` dan `exec_proc_unix.go`; lulus di Windows, CI Linux, dan container) Kode per OS lewat build tag (`proc_windows.go`, `proc_unix.go`): pohon proses ikut mati saat batas waktu, `kill_process`, dan server berhenti (Windows: Job Object atau `taskkill /T /F`; Linux: grup proses); keluaran dipaksa UTF-8; shell per OS dicatat di `docs/alat.md`; test di CI Windows dan Linux.
+- [ ] (Dipindah ke 0.7.0) Tahap B: `interact_with_process` (ConPTY di Windows, PTY di Unix) setelah tahap A stabil.
 
 ## Di luar cakupan
 
