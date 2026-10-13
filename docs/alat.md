@@ -52,6 +52,24 @@ Berkas JSON di luar semua folder dasar (ditolak bila berada di dalamnya, agar se
 
 Tidak ada dukungan berkas `.env`; isi variabel lewat pengaturan client MCP.
 
+## Varian `exec` (`mcp-file-manager-exec`)
+
+Dibangun dengan build tag `exec` (`go build -tags exec`); biner normal tidak memuat kode ini sama sekali (tanpa simbol proses, `tools/list` tidak berubah). Varian ini menambah tiga tool proses yang berjalan **tanpa batas folder dan dengan hak pengguna yang menjalankan server**. Tool file tetap dibatasi folder dasar; hanya proses yang tidak.
+
+**Syarat dan risiko.** Hanya untuk mesin terisolasi (VM, container Docker, atau Windows Sandbox untuk aplikasi Windows). Server menolak mulai kecuali `MCP_SANDBOX=ya`; itu pernyataan pengguna, bukan pemeriksaan: server tidak bisa memastikan mesinnya terisolasi. Tidak ada daftar program yang diizinkan, jadi perintah apa pun bisa membaca, menulis, atau menghapus di mana saja yang dapat dijangkau pengguna itu, dan jaringan tidak diblokir. Jangan memasang `.ssh`, token, atau data pribadi ke mesin itu; folder proyek yang dipasang tetap bisa rusak, jadi Git atau snapshot adalah jaring pengaman. Penggunaan di mesin biasa berarti memberi model akses penuh ke akun Anda.
+
+| Tool | Parameter | Keterangan |
+|---|---|---|
+| `start_process` | `program*`, `args`, `cwd`, `shell` (false), `timeout_s` (120, maks 3600), `wait_ms` (3000, maks 30000) | Jalankan program langsung (`program` + `args`, tanpa shell perantara) atau, dengan `shell=true`, satu baris perintah lewat shell OS. `cwd` bawaan folder dasar pertama; harus folder yang ada. Kembali segera setelah proses selesai atau `wait_ms` habis, dengan `pid` dan keluaran awal. Proses dimatikan sendiri setelah `timeout_s` (`timed_out: true`). |
+| `read_process_output` | `pid*`, `offset`, `length` (20000), `wait_ms` (1000) | Baca keluaran bertahap dari `offset` (bawaan: lanjutan bacaan terakhir); menunggu hingga `wait_ms` bila belum ada keluaran baru. |
+| `kill_process` | `pid*` | Hentikan proses beserta seluruh anak prosesnya. |
+
+Hasil: `pid`, `status` (`running` atau `exited`), `exit_code` dan `timed_out` (bila selesai), `output`, `next_offset`, `truncated` (hasil dipotong; lanjutkan dari `next_offset`), dan `dropped` (keluaran lama sudah terbuang dari penampung). Hanya proses yang dimulai server ini yang dikenal.
+
+Perilaku: stdout dan stderr digabung; stdin tertutup (tanpa interaktif; `interact_with_process` direncanakan di tahap B); penampung 256 KiB per proses (yang tertua dibuang); paling banyak 8 proses berjalan dan 20 proses selesai disimpan; lingkungan proses dibersihkan (hanya variabel sistem dasar seperti `PATH` dan `HOME`; tanpa token atau rahasia host); setiap proses tercatat di log stderr (program, argumen, `cwd`, kode keluar, durasi).
+
+Per OS: Windows menjalankan `cmd /d /c chcp 65001 & <baris>` agar keluaran UTF-8 dan mematikan pohon proses dengan `taskkill /T /F`; Linux memakai `sh -c` dan grup proses (`SIGKILL` ke seluruh grup). Pohon proses ikut mati saat batas waktu, `kill_process`, dan server berhenti.
+
 ## Keamanan path
 
 Ditolak: path kosong, null byte, traversal (`..`), serta symlink dan junction Windows yang mengarah keluar semua folder dasar (`BASE_DIR`), termasuk bila targetnya belum ada. Semua akses lewat `safe()` di `safepath.go`. `delete_file`, `delete_dir`, dan `move_file` memakai `safeLeaf()`, yang tidak mengikuti tautan pada komponen terakhir sehingga yang dihapus atau dipindah adalah tautannya, bukan isi targetnya; tautan yang mengarah keluar `BASE_DIR` tetap ditolak. Selebihnya `resolveLinks` mengikuti symlink dan junction komponen demi komponen karena `filepath.EvalSymlinks` di Go (Windows) tidak mengikuti junction.
@@ -61,4 +79,7 @@ Ditolak: path kosong, null byte, traversal (`..`), serta symlink dan junction Wi
 ```
 go build -o mcp-file-manager-go.exe .
 gofmt -l . ; go vet ./... ; go test ./...
+# varian exec (tool proses; lihat bagian di atas)
+go build -tags exec -o mcp-file-manager-exec.exe .
+go vet -tags exec ./... ; go test -tags exec ./...
 ```

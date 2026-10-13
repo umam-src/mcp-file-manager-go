@@ -27,6 +27,14 @@ Milestone dan nomor versi ada di [ROADMAP.md](ROADMAP.md); file ini memecahnya m
   - Belum diuji: folder jarak jauh (UNC di Windows, mis. `\\localhost\C$`; mount NFS/CIFS di Linux) dan kasus gagal (share putus, hak akses ditolak); sisa tindak lanjut sebelum rilis.
   - Pertanyaan terbuka ada di `Keputusan.md` (folder tidak tersedia saat mulai, `move_file` antar-folder, batas waktu share yang macet).
 
+### 0.6.0 - Varian `exec` (tool proses, hanya untuk mesin terisolasi)
+- [x] Tahap A di kode: `start_process`, `read_process_output`, `kill_process` (build tag `exec`, `MCP_SANDBOX=ya` wajib); test kasus gagal lulus di Windows; `tools/list` normal 5.308 (tidak berubah), exec 6.903; `docs/alat.md` memuat risiko dan syarat isolasi; CI dan workflow rilis diperbarui (belum dijalankan).
+- [ ] Push dan pastikan CI hijau di Linux dan Windows (kode proses per OS; Linux baru lulus vet lintas-kompilasi).
+- [ ] Uji stdio varian `exec` di container Linux nyata (pohon proses mati saat timeout dan `kill_process`).
+- [ ] Putuskan isolasi bawaan yang didokumentasikan (Docker atau Windows Sandbox) dan apakah `cwd` dibatasi akar yang dipasang; lihat `Keputusan.md` 2026-10-12.
+- [ ] Rilis 0.6.0 (bump `version.go` dan CHANGELOG satu commit) setelah butir di atas selesai.
+- [ ] Tahap B: `interact_with_process` (ConPTY di Windows, PTY di Unix) setelah tahap A stabil.
+
 ### Saran optimasi (dikerjakan setelah disetujui)
 - [ ] Test junction hanya berjalan di Windows (junction dipakai sebagai cadangan symlink); pastikan symlink asli juga teruji di Linux lewat CI.
 - [x] 0.2.1: bug data hilang pada tautan diperbaiki (`delete_file`, `delete_dir`, `move_file` bekerja pada tautannya sendiri, `safeLeaf()` di `safepath.go`, 6 test regresi). Test `delete_file` pada symlink file dilewati di Windows tanpa hak symlink; baru terbukti jalan lewat CI Linux. Python belum diperbaiki (dikerjakan setelah Go selesai).

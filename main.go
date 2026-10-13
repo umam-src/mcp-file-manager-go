@@ -40,6 +40,10 @@ func main() {
 
 func run() error {
 	setupLogging(os.Getenv)
+	if err := execCheck(os.Getenv); err != nil {
+		return err
+	}
+	defer execShutdown()
 	cfg, err := loadConfig(os.Getenv)
 	if err != nil {
 		return err

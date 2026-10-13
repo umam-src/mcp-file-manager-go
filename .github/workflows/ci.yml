@@ -52,3 +52,10 @@ jobs:
 
       - name: go test
         run: go test -count=1 ./...
+
+      # Varian exec (build tag): kode proses berbeda per OS, jadi diuji di keduanya.
+      - name: Varian exec (vet dan test)
+        shell: bash
+        run: |
+          go vet -tags exec ./...
+          go test -tags exec -count=1 ./...

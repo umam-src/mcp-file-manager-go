@@ -61,6 +61,9 @@ jobs:
           GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/mcp-file-manager-go-windows-amd64.exe .
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/mcp-file-manager-go-linux-amd64 .
+            # Varian exec (tool proses; hanya untuk mesin terisolasi), terpisah dari biner normal.
+            GOOS=windows GOARCH=amd64 go build -tags exec -trimpath -ldflags "-s -w" -o dist/mcp-file-manager-exec-windows-amd64.exe .
+            GOOS=linux GOARCH=amd64 go build -tags exec -trimpath -ldflags "-s -w" -o dist/mcp-file-manager-exec-linux-amd64 .
           fi
           (cd dist && sha256sum * > SHA256SUMS.txt)
 

@@ -7,6 +7,10 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 
 ## [Unreleased]
 
+### Added
+- Varian `mcp-file-manager-exec` (build tag `exec`, tahap A roadmap 0.6.0): tiga tool proses `start_process`, `read_process_output`, dan `kill_process` tanpa batas folder, hanya untuk mesin terisolasi; server menolak jalan tanpa `MCP_SANDBOX=ya`. Keluaran bertahap (`offset`, `next_offset`, `truncated`), batas waktu dengan pembunuhan pohon proses di Windows dan Linux, lingkungan bersih, dan log audit. Biner normal tidak berubah (`tools/list` tetap 5.308 karakter); varian `exec` 6.903 karakter. Rincian dan risiko di `docs/alat.md`. Belum dirilis.
+- CI menguji varian `exec` di Linux dan Windows; workflow rilis melampirkan biner `exec` hanya pada tag.
+
 ## [0.5.0] - 2026-10-13
 
 ### Added

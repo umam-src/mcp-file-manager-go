@@ -153,8 +153,8 @@ func annotations(title string, readOnly, destructive, idempotent bool) *mcp.Tool
 func newServer(cfg *config) *mcp.Server {
 	m := &manager{cfg: cfg}
 	srv := mcp.NewServer(
-		&mcp.Implementation{Name: "mcp-file-manager", Version: version},
-		&mcp.ServerOptions{Instructions: instructions(cfg.allBases())},
+		&mcp.Implementation{Name: serverName, Version: version},
+		&mcp.ServerOptions{Instructions: instructions(cfg.allBases()) + execInstructions},
 	)
 	srv.AddReceivingMiddleware(dropNullArgs, slimListTools, cfg.guard)
 
@@ -232,5 +232,6 @@ func newServer(cfg *config) *mcp.Server {
 		Annotations: annotations("Hapus direktori", false, true, true),
 	}, m.deleteDir)
 
+	registerExec(srv, cfg)
 	return srv
 }

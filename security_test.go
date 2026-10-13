@@ -190,10 +190,13 @@ func TestToolsAnnotatedOverProtocol(t *testing.T) {
 		"edit_block": true, "create_directory": true, "move_file": true, "get_file_info": true,
 		"start_search": true, "delete_file": true, "delete_dir": true,
 	}
-	if len(list.Tools) != len(want) {
-		t.Errorf("jumlah tool = %d, mau %d", len(list.Tools), len(want))
+	if len(list.Tools) != len(want)+execToolCount {
+		t.Errorf("jumlah tool = %d, mau %d", len(list.Tools), len(want)+execToolCount)
 	}
 	for _, tool := range list.Tools {
+		if execToolNames[tool.Name] {
+			continue // tool varian exec sengaja berbeda (openWorldHint); diuji di exec_test.go
+		}
 		if !want[tool.Name] {
 			t.Errorf("tool tak terduga: %s", tool.Name)
 		}

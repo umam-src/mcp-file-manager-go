@@ -32,8 +32,8 @@ func TestSkemaTanpaUnionNull(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tools.Tools) != 11 {
-		t.Fatalf("jumlah tool = %d, harapan 11", len(tools.Tools))
+	if len(tools.Tools) != 11+execToolCount {
+		t.Fatalf("jumlah tool = %d, harapan %d", len(tools.Tools), 11+execToolCount)
 	}
 	schemas := map[string]map[string]any{}
 	for _, tool := range tools.Tools {
