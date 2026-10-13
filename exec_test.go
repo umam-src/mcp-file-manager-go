@@ -304,3 +304,51 @@ func TestEnvMeneruskanVariabelAman(t *testing.T) {
 		t.Error("variabel rahasia tidak boleh diteruskan")
 	}
 }
+
+func TestPenampungMelingkarMenyimpanEkorTepat(t *testing.T) {
+	p := &proc{}
+	var all []byte
+	for i, n := range []int{1000, 70000, 200000, 5, 300000, 123457, 1, 262144, 262145, 999} {
+		b := make([]byte, n)
+		for j := range b {
+			b[j] = byte('a' + (len(all)+j)%26)
+		}
+		all = append(all, b...)
+		if _, err := p.Write(b); err != nil {
+			t.Fatal(err)
+		}
+		total := int64(len(all))
+		wantBase := total - bufCap
+		if wantBase < 0 {
+			wantBase = 0
+		}
+		p.mu.Lock()
+		gotBase := p.base
+		got := p.sliceLocked(gotBase, total)
+		p.mu.Unlock()
+		if gotBase != wantBase {
+			t.Fatalf("langkah %d: base %d, seharusnya %d", i, gotBase, wantBase)
+		}
+		if string(got) != string(all[wantBase:]) {
+			t.Fatalf("langkah %d: isi penampung tidak cocok dengan ekor keluaran", i)
+		}
+	}
+}
+
+func TestBacaLengthLebihKecilDariKarakter(t *testing.T) {
+	p := &proc{}
+	_, _ = p.Write([]byte("é€x")) // 2 + 3 + 1 byte
+	var out string
+	for i := 0; i < 10; i++ {
+		r := p.snapshot(nil, 1)
+		if s, ok := r["output"].(string); ok {
+			out += s
+		}
+		if r["next_offset"].(int64) >= 6 {
+			break
+		}
+	}
+	if out != "é€x" {
+		t.Fatalf("keluaran %q, seharusnya %q (bacaan harus maju walau length kecil)", out, "é€x")
+	}
+}

@@ -110,8 +110,9 @@ type proc struct {
 	stdinMu sync.Mutex
 
 	mu       sync.Mutex
-	buf      []byte
-	base     int64 // offset byte pertama di buf
+	buf      []byte // tumbuh sampai bufCap, lalu melingkar
+	head     int    // indeks byte tertua di buf saat sudah penuh (0 selama belum penuh)
+	base     int64  // offset byte tertua yang masih tersimpan
 	readPos  int64
 	exited   bool
 	code     int
@@ -119,14 +120,47 @@ type proc struct {
 }
 
 func (p *proc) Write(b []byte) (int, error) {
+	n := len(b)
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.buf = append(p.buf, b...)
-	if over := len(p.buf) - bufCap; over > 0 {
-		p.buf = append(p.buf[:0], p.buf[over:]...)
-		p.base += int64(over)
+	if len(p.buf) < bufCap { // belum penuh: tumbuh linear
+		room := bufCap - len(p.buf)
+		if len(b) <= room {
+			p.buf = append(p.buf, b...)
+			return n, nil
+		}
+		p.buf = append(p.buf, b[:room]...)
+		b = b[room:]
 	}
-	return len(b), nil
+	// Penuh: penampung melingkar, byte tertua ditimpa tanpa menyalin ulang isinya.
+	total := p.base + bufCap + int64(len(b))
+	if len(b) >= bufCap {
+		copy(p.buf, b[len(b)-bufCap:])
+		p.head = 0
+	} else {
+		k := copy(p.buf[p.head:], b)
+		copy(p.buf, b[k:])
+		p.head = (p.head + len(b)) % bufCap
+	}
+	p.base = total - bufCap
+	return n, nil
+}
+
+// byteAtLocked mengembalikan byte pada offset logis off (harus tersimpan).
+func (p *proc) byteAtLocked(off int64) byte {
+	return p.buf[(int64(p.head)+off-p.base)%int64(len(p.buf))]
+}
+
+// sliceLocked menyalin byte logis [from, to), yang harus berada di dalam penampung.
+func (p *proc) sliceLocked(from, to int64) []byte {
+	if to <= from {
+		return nil
+	}
+	out := make([]byte, to-from)
+	start := (int64(p.head) + from - p.base) % int64(len(p.buf))
+	k := copy(out, p.buf[start:])
+	copy(out[k:], p.buf)
+	return out
 }
 
 func (p *proc) isExited() bool {
@@ -201,16 +235,23 @@ func (p *proc) snapshot(offset *int64, length int) result {
 	if length <= 0 || length > readCap {
 		length = readCap
 	}
-	start := from - p.base
-	chunk := p.buf[start:]
-	if len(chunk) > length {
-		chunk = chunk[:length]
-		for i := start + int64(len(chunk)); len(chunk) > 0 && !utf8.RuneStart(p.buf[i]); i-- {
-			chunk = chunk[:len(chunk)-1]
-		}
+	end := total
+	if end-from > int64(length) {
+		end = from + int64(length)
 		res["truncated"] = true
+		// Jangan memotong di tengah karakter UTF-8.
+		for end > from && !utf8.RuneStart(p.byteAtLocked(end)) {
+			end--
+		}
+		if end == from { // length lebih kecil dari satu karakter: ambil karakter utuh agar bacaan tetap maju
+			end = from + 1
+			for end < total && end-from < utf8.UTFMax && !utf8.RuneStart(p.byteAtLocked(end)) {
+				end++
+			}
+		}
 	}
-	p.readPos = from + int64(len(chunk))
+	chunk := p.sliceLocked(from, end)
+	p.readPos = end
 	if len(chunk) > 0 {
 		res["output"] = strings.ToValidUTF8(string(chunk), "?")
 	}
