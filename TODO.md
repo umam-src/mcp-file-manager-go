@@ -33,7 +33,9 @@ Milestone dan nomor versi ada di [ROADMAP.md](ROADMAP.md); file ini memecahnya m
 - [x] Uji stdio varian `exec` di container Linux nyata (2026-10-13, Docker 29 di VM dev): shell, timeout, `kill_process`, tanpa shell, program tidak ada, tanpa `MCP_SANDBOX` lulus; pohon proses mati. Catatan: pakai `docker run --init` agar tidak ada zombie (sudah di `docs/alat.md`).
 - [x] Isolasi dan `cwd` diputuskan 2026-10-13 (meniru Desktop Commander: `cwd` bebas, isolasi di mesin: Docker atau Windows Sandbox sebagai pilihan terdokumentasi; config tambahan lewat config 0.5); lihat `Keputusan.md`.
 - [x] Rilis 0.6.0 (bump `version.go` dan CHANGELOG satu commit; tahap A saja, 2026-10-13).
-- [ ] 0.7.0, tahap B: `interact_with_process` (ConPTY di Windows, PTY di Unix) setelah tahap A stabil.
+- [x] 0.7.0, tahap B di kode: `interact_with_process` dan `interactive` pada `start_process` (pipe seperti Desktop Commander, bukan PTY); test lulus dengan `-tags exec` di Windows; uji stdio dengan biner sungguhan lulus (2026-10-13). Belum dirilis (`[Unreleased]`).
+- [ ] 0.7.0: CI Linux untuk test interaktif, uji dari Claude Desktop, lalu rilis (bump `version.go` dan CHANGELOG satu commit).
+- [ ] Opsional: PTY sungguhan (ConPTY di Windows, PTY di Unix) bila pipe tidak cukup untuk REPL yang perlu terminal; butuh pustaka atau kode per OS, putuskan setelah ada kebutuhan nyata.
 
 ### Saran optimasi (dikerjakan setelah disetujui)
 - [ ] Test junction hanya berjalan di Windows (junction dipakai sebagai cadangan symlink); pastikan symlink asli juga teruji di Linux lewat CI.

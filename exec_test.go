@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
@@ -35,6 +36,17 @@ func TestHelperProses(t *testing.T) {
 		fmt.Println("satu")
 		time.Sleep(400 * time.Millisecond)
 		fmt.Println("dua")
+	case "gema":
+		// Membalas tiap baris stdin dengan "got:<baris>"; selesai saat EOF atau "quit".
+		fmt.Println("siap")
+		sc := bufio.NewScanner(os.Stdin)
+		for sc.Scan() {
+			if sc.Text() == "quit" {
+				break
+			}
+			fmt.Println("got:" + sc.Text())
+		}
+		fmt.Println("selesai")
 	}
 	os.Exit(0)
 }
@@ -185,5 +197,94 @@ func TestBatasProsesBerjalan(t *testing.T) {
 	}
 	if r := m.start(helperArgs("tidur")); r["error"] == nil {
 		t.Fatalf("proses ke-%d harus ditolak: %v", maxRunning+1, r)
+	}
+}
+
+func outStr(r result) string {
+	s, _ := r["output"].(string)
+	return strings.ReplaceAll(s, "\r\n", "\n")
+}
+
+func TestInteraktifBolakBalik(t *testing.T) {
+	m := newMgr(t)
+	in := helperArgs("gema")
+	in.Interactive = true
+	in.WaitMs = 5000
+	r := m.start(in)
+	if r["error"] != nil || r["status"] != "running" {
+		t.Fatalf("harus berjalan: %v", r)
+	}
+	pid := pidOf(t, r)
+	if !strings.Contains(outStr(r), "siap") {
+		// keluaran awal bisa belum tiba saat start_process kembali
+		r = m.read(readProcInput{Pid: pid, WaitMs: 5000})
+		if !strings.Contains(outStr(r), "siap") {
+			t.Fatalf("tanpa 'siap': %v", r)
+		}
+	}
+	for _, kata := range []string{"halo", "dunia"} {
+		r = m.interact(interactInput{Pid: pid, Input: kata, WaitMs: 5000})
+		if r["error"] != nil || !strings.Contains(outStr(r), "got:"+kata) {
+			t.Fatalf("balasan %q salah: %v", kata, r)
+		}
+	}
+	// "quit" membuat proses selesai; hasilnya status exited dengan kode 0.
+	r = m.interact(interactInput{Pid: pid, Input: "quit", WaitMs: 5000})
+	m.get(pid).waitFor(5*time.Second, false, 0)
+	r = m.read(readProcInput{Pid: pid, WaitMs: 100})
+	if r["status"] != "exited" || r["exit_code"] != 0 {
+		t.Fatalf("harus selesai kode 0: %v", r)
+	}
+}
+
+func TestInteraktifCloseKirimEOF(t *testing.T) {
+	m := newMgr(t)
+	in := helperArgs("gema")
+	in.Interactive = true
+	pid := pidOf(t, m.start(in))
+	r := m.interact(interactInput{Pid: pid, Input: "satu", Close: true, WaitMs: 5000})
+	if r["error"] != nil {
+		t.Fatalf("close gagal: %v", r)
+	}
+	m.get(pid).waitFor(5*time.Second, false, 0)
+	r = m.read(readProcInput{Pid: pid, Offset: ptr(int64(0)), WaitMs: 100})
+	if r["status"] != "exited" || !strings.Contains(outStr(r), "got:satu") || !strings.Contains(outStr(r), "selesai") {
+		t.Fatalf("EOF harus mengakhiri proses setelah membalas: %v", r)
+	}
+}
+
+func TestInteraktifGagal(t *testing.T) {
+	m := newMgr(t)
+	if r := m.interact(interactInput{Pid: 999999, Input: "x"}); r["error"] == nil {
+		t.Fatalf("pid tidak dikenal harus gagal: %v", r)
+	}
+	// Proses non-interaktif menolak masukan.
+	pid := pidOf(t, m.start(helperArgs("tidur")))
+	if r := m.interact(interactInput{Pid: pid, Input: "x"}); r["error"] == nil {
+		t.Fatalf("non-interaktif harus ditolak: %v", r)
+	}
+	// Masukan terlalu besar.
+	in := helperArgs("gema")
+	in.Interactive = true
+	pid2 := pidOf(t, m.start(in))
+	if r := m.interact(interactInput{Pid: pid2, Input: strings.Repeat("a", maxInput+1)}); r["error"] == nil {
+		t.Fatalf("masukan terlalu besar harus ditolak: %v", r)
+	}
+	// Proses yang sudah selesai menolak masukan.
+	m.interact(interactInput{Pid: pid2, Input: "quit", WaitMs: 5000})
+	m.get(pid2).waitFor(5*time.Second, false, 0)
+	if r := m.interact(interactInput{Pid: pid2, Input: "x"}); r["error"] == nil {
+		t.Fatalf("proses selesai harus ditolak: %v", r)
+	}
+}
+
+func TestNonInteraktifStdinTertutup(t *testing.T) {
+	// Tanpa interactive, stdin tertutup: program yang membaca stdin langsung dapat EOF.
+	m := newMgr(t)
+	in := helperArgs("gema")
+	in.WaitMs = 5000
+	r := m.start(in)
+	if r["status"] != "exited" || !strings.Contains(outStr(r), "selesai") {
+		t.Fatalf("stdin tertutup harus langsung selesai: %v", r)
 	}
 }

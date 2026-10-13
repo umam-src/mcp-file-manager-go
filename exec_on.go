@@ -4,6 +4,7 @@ package main
 
 import (
 	"errors"
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -20,7 +21,7 @@ import (
 // server menolak jalan tanpa MCP_SANDBOX=ya. Lihat docs/alat.md.
 const (
 	serverName       = "mcp-file-manager-exec"
-	execToolCount    = 3
+	execToolCount    = 4
 	execInstructions = " Varian exec: start_process menjalankan program (program + args, atau shell=true dengan satu baris perintah) tanpa batas folder; " +
 		"lanjutkan keluaran dengan read_process_output(pid) dan hentikan dengan kill_process(pid). Proses berhenti sendiri setelah timeout_s."
 
@@ -35,9 +36,12 @@ const (
 	defWait     = 3000 // ms: tunggu start_process
 	defReadWait = 1000 // ms: tunggu read_process_output
 	maxWait     = 30000
+	maxInput    = 64 << 10 // byte masukan per interact_with_process
+	settleGap   = 120 * time.Millisecond
+	writeWait   = 5 * time.Second
 )
 
-var execToolNames = map[string]bool{"start_process": true, "read_process_output": true, "kill_process": true}
+var execToolNames = map[string]bool{"start_process": true, "read_process_output": true, "kill_process": true, "interact_with_process": true}
 
 // execCheck menolak mulai bila pengguna belum menyatakan mesinnya terisolasi.
 func execCheck(getenv func(string) string) error {
@@ -64,12 +68,21 @@ func cleanEnv() []string {
 }
 
 type startInput struct {
-	Program  string   `json:"program"`
-	Args     []string `json:"args,omitempty"`
-	Cwd      string   `json:"cwd,omitempty"`
-	Shell    bool     `json:"shell,omitempty"`
-	TimeoutS int      `json:"timeout_s,omitempty"`
-	WaitMs   int      `json:"wait_ms,omitempty"`
+	Program string   `json:"program"`
+	Args    []string `json:"args,omitempty"`
+	Cwd     string   `json:"cwd,omitempty"`
+	Shell   bool     `json:"shell,omitempty"`
+	// Interactive membuka stdin agar proses bisa menerima masukan lewat interact_with_process.
+	Interactive bool `json:"interactive,omitempty"`
+	TimeoutS    int  `json:"timeout_s,omitempty"`
+	WaitMs      int  `json:"wait_ms,omitempty"`
+}
+
+type interactInput struct {
+	Pid    int    `json:"pid"`
+	Input  string `json:"input,omitempty"`
+	Close  bool   `json:"close,omitempty"`
+	WaitMs int    `json:"wait_ms,omitempty"`
 }
 
 type readProcInput struct {
@@ -90,6 +103,8 @@ type proc struct {
 	cmd     *exec.Cmd
 	started time.Time
 	done    chan struct{}
+	stdin   io.WriteCloser // nil bila tidak interaktif
+	stdinMu sync.Mutex
 
 	mu       sync.Mutex
 	buf      []byte
@@ -249,7 +264,13 @@ func (m *execMgr) start(in startInput) result {
 	setupProc(cmd)
 	p := &proc{started: time.Now(), done: make(chan struct{})}
 	cmd.Stdout, cmd.Stderr = p, p
-
+	if in.Interactive {
+		w, err := cmd.StdinPipe()
+		if err != nil {
+			return fail("gagal membuka stdin: " + err.Error())
+		}
+		p.stdin = w
+	}
 	m.mu.Lock()
 	running := 0
 	for _, q := range m.procs {
@@ -272,7 +293,12 @@ func (m *execMgr) start(in startInput) result {
 
 	slog.Info("exec mulai", "pid", p.pid, "program", in.Program, "args", in.Args, "shell", in.Shell, "cwd", cwd, "timeout", timeout)
 	go p.wait(timeout)
-	p.waitFor(time.Duration(clamp(in.WaitMs, defWait, maxWait))*time.Millisecond, false, 0)
+	wait := time.Duration(clamp(in.WaitMs, defWait, maxWait)) * time.Millisecond
+	if in.Interactive {
+		p.waitSettle(wait, 0) // prompt awal sudah tampil: tidak perlu menunggu proses selesai
+	} else {
+		p.waitFor(wait, false, 0)
+	}
 	return p.snapshot(nil, 0)
 }
 
@@ -341,6 +367,81 @@ func (m *execMgr) kill(in killInput) result {
 	return p.statusLocked()
 }
 
+// total mengembalikan offset byte keluaran saat ini.
+func (p *proc) total() int64 {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.base + int64(len(p.buf))
+}
+
+// waitSettle menunggu keluaran baru setelah from (paling lama d), lalu sampai
+// keluaran diam selama settleGap, supaya balasan satu masukan terbaca utuh.
+func (p *proc) waitSettle(d time.Duration, from int64) {
+	deadline := time.Now().Add(d)
+	p.waitFor(d, true, from)
+	last := p.total()
+	for time.Now().Before(deadline) && !p.isExited() {
+		time.Sleep(settleGap)
+		now := p.total()
+		if now == last {
+			return
+		}
+		last = now
+	}
+}
+
+// closeStdin menutup stdin (EOF); aman dipanggil berulang.
+func (p *proc) closeStdin() {
+	p.stdinMu.Lock()
+	defer p.stdinMu.Unlock()
+	if p.stdin != nil {
+		_ = p.stdin.Close()
+	}
+}
+
+func (m *execMgr) interact(in interactInput) result {
+	p := m.get(in.Pid)
+	if p == nil {
+		return fail("pid tidak dikenal; hanya proses yang dimulai server ini yang bisa diberi masukan")
+	}
+	if p.stdin == nil {
+		return fail("proses tidak interaktif; mulai ulang start_process dengan interactive=true")
+	}
+	if p.isExited() {
+		return fail("proses sudah selesai; baca sisa keluaran dengan read_process_output")
+	}
+	if len(in.Input) > maxInput {
+		return fail("masukan terlalu besar (maks 64 KiB); kirim bertahap")
+	}
+	from := p.total()
+	if in.Input != "" {
+		s := in.Input
+		if !strings.HasSuffix(s, "\n") {
+			s += "\n"
+		}
+		errc := make(chan error, 1)
+		go func() {
+			p.stdinMu.Lock()
+			defer p.stdinMu.Unlock()
+			_, err := io.WriteString(p.stdin, s)
+			errc <- err
+		}()
+		select {
+		case err := <-errc:
+			if err != nil {
+				return fail("gagal menulis ke stdin: " + err.Error())
+			}
+		case <-time.After(writeWait):
+			return fail("stdin penuh: proses tidak membaca masukan; hentikan dengan kill_process bila macet")
+		}
+	}
+	if in.Close {
+		p.closeStdin()
+	}
+	p.waitSettle(time.Duration(clamp(in.WaitMs, defWait, maxWait))*time.Millisecond, from)
+	return p.snapshot(nil, 0)
+}
+
 // execShutdown mematikan semua proses yang masih berjalan saat server berhenti.
 func execShutdown() {
 	if theExec == nil {
@@ -379,4 +480,11 @@ func registerExec(srv *mcp.Server, cfg *config) {
 		Description: "Hentikan proses beserta seluruh anak prosesnya.",
 		Annotations: &mcp.ToolAnnotations{Title: "Hentikan proses", DestructiveHint: &yes, IdempotentHint: true, OpenWorldHint: &no},
 	}, m.kill)
+
+	addTool(srv, &mcp.Tool{
+		Name: "interact_with_process",
+		Description: "Kirim satu baris masukan ke stdin proses yang dimulai dengan interactive=true (REPL, prompt), lalu kembalikan keluaran baru setelah diam (hingga wait_ms). " +
+			"close=true menutup stdin (EOF).",
+		Annotations: &mcp.ToolAnnotations{Title: "Beri masukan ke proses", DestructiveHint: &yes, OpenWorldHint: &yes},
+	}, m.interact)
 }

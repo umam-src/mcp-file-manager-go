@@ -70,7 +70,7 @@ Pembaruan 2026-10-12 (lihat `Keputusan.md`): tool `run` tunggal diganti tool pro
 
 - [x] (Selesai dan dirilis 2026-10-13) Tahap A: `start_process`, `read_process_output`, `kill_process` (tanpa interaktif); keluaran bertahap dengan `offset`/`length`, penampung berbatas, status `running`/`exited` dengan kode keluar.
 - [x] (Kode di `exec_proc_windows.go` dan `exec_proc_unix.go`; lulus di Windows, CI Linux, dan container) Kode per OS lewat build tag (`proc_windows.go`, `proc_unix.go`): pohon proses ikut mati saat batas waktu, `kill_process`, dan server berhenti (Windows: Job Object atau `taskkill /T /F`; Linux: grup proses); keluaran dipaksa UTF-8; shell per OS dicatat di `docs/alat.md`; test di CI Windows dan Linux.
-- [ ] (Dipindah ke 0.7.0) Tahap B: `interact_with_process` (ConPTY di Windows, PTY di Unix) setelah tahap A stabil.
+- [x] (Kode selesai 2026-10-13, belum dirilis; direncanakan 0.7.0) Tahap B: `interact_with_process` dan `interactive` pada `start_process`, lewat pipe seperti Desktop Commander. PTY sungguhan (ConPTY/PTY) ditunda sampai ada kebutuhan nyata.
 
 ## Di luar cakupan
 
