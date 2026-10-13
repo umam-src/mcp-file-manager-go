@@ -68,7 +68,7 @@ Hasil: `pid`, `status` (`running` atau `exited`), `exit_code` dan `timed_out` (b
 
 Perilaku: stdout dan stderr digabung; stdin tertutup (tanpa interaktif; `interact_with_process` direncanakan di tahap B); penampung 256 KiB per proses (yang tertua dibuang); paling banyak 8 proses berjalan dan 20 proses selesai disimpan; lingkungan proses dibersihkan (hanya variabel sistem dasar seperti `PATH` dan `HOME`; tanpa token atau rahasia host); setiap proses tercatat di log stderr (program, argumen, `cwd`, kode keluar, durasi).
 
-Per OS: Windows menjalankan `cmd /d /c chcp 65001 & <baris>` agar keluaran UTF-8 dan mematikan pohon proses dengan `taskkill /T /F`; Linux memakai `sh -c` dan grup proses (`SIGKILL` ke seluruh grup). Pohon proses ikut mati saat batas waktu, `kill_process`, dan server berhenti.
+Per OS: Windows menjalankan `cmd /d /c chcp 65001 & <baris>` agar keluaran UTF-8 dan mematikan pohon proses dengan `taskkill /T /F`; Linux memakai `sh -c` dan grup proses (`SIGKILL` ke seluruh grup). Pohon proses ikut mati saat batas waktu, `kill_process`, dan server berhenti. Di Docker, jalankan container dengan `--init`: bila server menjadi PID 1 tanpa init, proses yang sudah dimatikan tetap tertinggal sebagai zombie (tidak berjalan, tetapi tidak dibersihkan); dengan `--init` tidak ada yang tersisa (teruji di Linux, Docker 29).
 
 ## Keamanan path
 
