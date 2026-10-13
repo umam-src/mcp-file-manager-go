@@ -34,7 +34,8 @@ Milestone dan nomor versi ada di [ROADMAP.md](ROADMAP.md); file ini memecahnya m
 - [x] Isolasi dan `cwd` diputuskan 2026-10-13 (meniru Desktop Commander: `cwd` bebas, isolasi di mesin: Docker atau Windows Sandbox sebagai pilihan terdokumentasi; config tambahan lewat config 0.5); lihat `Keputusan.md`.
 - [x] Rilis 0.6.0 (bump `version.go` dan CHANGELOG satu commit; tahap A saja, 2026-10-13).
 - [x] 0.7.0, tahap B di kode: `interact_with_process` dan `interactive` pada `start_process` (pipe seperti Desktop Commander, bukan PTY); test lulus dengan `-tags exec` di Windows; uji stdio dengan biner sungguhan lulus (2026-10-13). Belum dirilis (`[Unreleased]`).
-- [ ] 0.7.0: CI Linux untuk test interaktif, uji dari Claude Desktop, lalu rilis (bump `version.go` dan CHANGELOG satu commit).
+- [x] 0.7.0: CI Linux dan Windows hijau, rilis `v0.7.0` (2026-10-13, bump `version.go` dan CHANGELOG satu commit); Release dan checksum `exec` Windows cocok.
+- [ ] Uji `interact_with_process` dari Claude Desktop (pasang `mcp-file-manager-exec` 0.7.0 dan restart).
 - [ ] Opsional: PTY sungguhan (ConPTY di Windows, PTY di Unix) bila pipe tidak cukup untuk REPL yang perlu terminal; butuh pustaka atau kode per OS, putuskan setelah ada kebutuhan nyata.
 
 ### Saran optimasi (dikerjakan setelah disetujui)
