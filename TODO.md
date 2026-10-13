@@ -28,10 +28,10 @@ Milestone dan nomor versi ada di [ROADMAP.md](ROADMAP.md); file ini memecahnya m
   - Pertanyaan terbuka ada di `Keputusan.md` (folder tidak tersedia saat mulai, `move_file` antar-folder, batas waktu share yang macet).
 
 ### 0.6.0 - Varian `exec` (tool proses, hanya untuk mesin terisolasi)
-- [x] Tahap A di kode: `start_process`, `read_process_output`, `kill_process` (build tag `exec`, `MCP_SANDBOX=ya` wajib); test kasus gagal lulus di Windows; `tools/list` normal 5.308 (tidak berubah), exec 6.903; `docs/alat.md` memuat risiko dan syarat isolasi; CI dan workflow rilis diperbarui (belum dijalankan).
-- [ ] Push dan pastikan CI hijau di Linux dan Windows (kode proses per OS; Linux baru lulus vet lintas-kompilasi).
+- [x] Tahap A di kode: `start_process`, `read_process_output`, `kill_process` (build tag `exec`, `MCP_SANDBOX=ya` wajib); test kasus gagal lulus di Windows; `tools/list` normal 5.308 (tidak berubah), exec 6.903; `docs/alat.md` memuat risiko dan syarat isolasi; CI dan workflow rilis diperbarui (CI sudah hijau; alur tag belum dicoba).
+- [x] Push (`2a4d7c1`) dan CI hijau di Linux dan Windows (2026-10-13).
 - [ ] Uji stdio varian `exec` di container Linux nyata (pohon proses mati saat timeout dan `kill_process`).
-- [ ] Putuskan isolasi bawaan yang didokumentasikan (Docker atau Windows Sandbox) dan apakah `cwd` dibatasi akar yang dipasang; lihat `Keputusan.md` 2026-10-12.
+- [x] Isolasi dan `cwd` diputuskan 2026-10-13 (meniru Desktop Commander: `cwd` bebas, isolasi di mesin: Docker atau Windows Sandbox sebagai pilihan terdokumentasi; config tambahan lewat config 0.5); lihat `Keputusan.md`.
 - [ ] Rilis 0.6.0 (bump `version.go` dan CHANGELOG satu commit) setelah butir di atas selesai.
 - [ ] Tahap B: `interact_with_process` (ConPTY di Windows, PTY di Unix) setelah tahap A stabil.
 
