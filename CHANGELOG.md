@@ -7,6 +7,8 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-13
+
 ### Added
 - Varian `exec` tahap B: tool `interact_with_process` (`pid`, `input`, `close`, `wait_ms`) dan parameter `interactive` pada `start_process`. Stdin lewat pipe (bukan PTY): baris masukan dikirim, keluaran baru dikembalikan setelah diam; `close=true` mengirim EOF. Pagar: hanya proses `interactive` milik server ini, masukan maks 64 KiB, gagal jelas bila stdin penuh (5 detik), proses selesai, atau `pid` asing. Biner normal tidak berubah (`tools/list` tetap 5.308 karakter); varian `exec` 15 tool, 7.482 karakter (sebelumnya 6.903 dengan 3 tool proses). Teruji di Windows (`cmd`: masukan, EOF, kasus gagal) dan lewat stdio dengan biner sungguhan.
 
