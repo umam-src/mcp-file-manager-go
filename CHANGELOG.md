@@ -7,6 +7,9 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 
 ## [Unreleased]
 
+### Changed
+- Dokumentasi varian `exec`: `shell=true` memakai cmd (Windows) atau sh (Linux) dan tidak melewati batas apa pun karena tidak ada daftar program; aturan kutip cmd dan cara memakai PowerShell lewat `program` + `args` dijelaskan di `docs/alat.md`.
+
 ## [0.7.1] - 2026-10-14
 
 Perbaikan varian `exec`; biner normal tidak berubah.
