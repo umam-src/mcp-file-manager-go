@@ -185,7 +185,7 @@ func newServer(cfg *config) *mcp.Server {
 
 	addTool(srv, &mcp.Tool{
 		Name: "read_multiple_files",
-		Description: "Baca beberapa file (maks 20) sekaligus dengan aturan read_file; batas karakter dibagi untuk semua file. " +
+		Description: "Baca beberapa file (maks 20) sekaligus dengan aturan read_file (offset dan length berlaku untuk semua file); batas karakter dibagi untuk semua file. " +
 			"File yang gagal dibaca memuat 'error' tanpa menggagalkan yang lain.",
 		Annotations: annotations("Baca banyak file", true, false, true),
 	}, m.readMultipleFiles)

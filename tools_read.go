@@ -259,7 +259,9 @@ func (m *manager) readFile(in readInput) result {
 }
 
 type multiInput struct {
-	Paths []string `json:"paths"`
+	Paths  []string `json:"paths"`
+	Offset int      `json:"offset,omitempty"`
+	Length *int     `json:"length,omitempty"`
 }
 
 func (m *manager) readMultipleFiles(in multiInput) result {
@@ -269,6 +271,10 @@ func (m *manager) readMultipleFiles(in multiInput) result {
 	if len(in.Paths) > maxReadFiles {
 		return fail(fmt.Sprintf("Maksimal %d file per panggilan", maxReadFiles))
 	}
+	length := 2000
+	if in.Length != nil {
+		length = *in.Length
+	}
 	budget := m.cfg.maxReadChars
 	files := make([]result, 0, len(in.Paths))
 	for _, p := range in.Paths {
@@ -276,7 +282,7 @@ func (m *manager) readMultipleFiles(in multiInput) result {
 			files = append(files, result{"path": p, "error": "batas karakter tercapai; baca file ini terpisah"})
 			continue
 		}
-		r := m.readPath(p, 0, 2000, budget)
+		r := m.readPath(p, in.Offset, length, budget)
 		if msg, bad := r["error"]; bad {
 			r = result{"path": p, "error": msg}
 		} else {

@@ -7,7 +7,10 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 
 ## [Unreleased]
 
-## [0.7.2] - 2026-10-21
+## [0.8.0] - 2026-10-21
+
+### Added
+- `read_multiple_files` menerima `offset` dan `length` opsional (aturan sama dengan `read_file`, berlaku untuk semua berkas; `offset` negatif membaca ekor). Mengambil sebagian berkas panjang tidak lagi perlu membaca seluruhnya. `tools/list` varian exec naik 7.482 menjadi 7.583 karakter (+101); alasan di vault (Keputusan 2026-10-21).
 
 ### Changed
 - Hasil tool tidak lagi meng-escape `<`, `>`, dan `&` (`\u003c`, `\u003e`, `\u0026`): satu karakter kini tetap satu karakter, jadi isi kode dan HTML lebih hemat token. Contoh nyata (`read_multiple_files` atas dua berkas Go): teks hasil 20.454 menjadi 20.094 karakter (-1,8%); isi setelah di-decode JSON tetap sama. `tools/list` tidak berubah.
