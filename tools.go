@@ -44,12 +44,21 @@ func instructions(bases []string) string {
 // token di tools/list (syarat utama proyek: hemat token).
 func wrap[In any](f func(In) result) mcp.ToolHandlerFor[In, any] {
 	return func(_ context.Context, _ *mcp.CallToolRequest, in In) (*mcp.CallToolResult, any, error) {
-		b, err := json.Marshal(f(in))
-		if err != nil {
-			b = []byte(`{"error":"hasil tool gagal diubah ke JSON"}`)
-		}
-		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(b)}}}, nil, nil
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: encodeResult(f(in))}}}, nil, nil
 	}
+}
+
+// encodeResult mengubah hasil tool ke JSON ringkas tanpa escape HTML:
+// json.Marshal menulis <, >, dan & sebagai \u003c, \u003e, \u0026 (6 karakter
+// untuk 1), padahal hasil bukan HTML (syarat utama proyek: hemat token).
+func encodeResult(v any) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return `{"error":"hasil tool gagal diubah ke JSON"}`
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
 }
 
 // slimSchema membangkitkan skema input dari struct In seperti SDK, lalu

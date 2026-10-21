@@ -7,7 +7,10 @@ Milestone berikutnya mengikuti [ROADMAP.md](ROADMAP.md).
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-10-21
+
 ### Changed
+- Hasil tool tidak lagi meng-escape `<`, `>`, dan `&` (`\u003c`, `\u003e`, `\u0026`): satu karakter kini tetap satu karakter, jadi isi kode dan HTML lebih hemat token. Contoh nyata (`read_multiple_files` atas dua berkas Go): teks hasil 20.454 menjadi 20.094 karakter (-1,8%); isi setelah di-decode JSON tetap sama. `tools/list` tidak berubah.
 - Dokumentasi varian `exec`: `shell=true` memakai cmd (Windows) atau sh (Linux) dan tidak melewati batas apa pun karena tidak ada daftar program; aturan kutip cmd dan cara memakai PowerShell lewat `program` + `args` dijelaskan di `docs/alat.md`.
 
 ## [0.7.1] - 2026-10-14
